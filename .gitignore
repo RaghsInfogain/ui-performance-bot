@@ -1,0 +1,43 @@
+# Dependencies & caches
+node_modules/
+.npm-cache/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+target/
+*.tsbuildinfo
+ui-performance-portal/dist/
+
+# Runtime / local data (large or sensitive)
+Results/
+screenshots/
+ui-performance-portal/data/users.json
+.env
+.env.*
+!.env.example
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+PlaywrightLoadTest_v3/.metadata/
+PlaywrightLoadTest_v3/.classpath
+PlaywrightLoadTest_v3/.project
+PlaywrightLoadTest_v3/.settings/
+**/.lock
+**/write.lock
+
+# Logs
+*.log
+npm-debug.log*
+
+.metadata/
+**/__pycache__/
+*.pyc
+PlaywrightLoadTest_v3/.project
+PlaywrightLoadTest_v3/.settings/

@@ -1,0 +1,10 @@
+Headless_Mode,TRUE
+BrowserType,chrome
+Test_Duration_Seconds,600
+TakeScreenshot,FALSE
+ScriptedFlow,FALSE
+UserExperience,TRUE
+AutoCrawl,FALSE
+Think_Time,100
+Multi_Threading,20
+CrawlerURL,

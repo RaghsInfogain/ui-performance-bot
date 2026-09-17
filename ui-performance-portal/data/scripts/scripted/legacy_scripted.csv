@@ -1,0 +1,9 @@
+Test_Case_Name,Transaction_Name,Test_Steps,Object_Name,Request,Selector,Locator,Action,Parameter,Element to Wait,Element identifier,Frame_Selector
+Orange_HRM,TC01_LaunchToLogin,Launch https://opensource-demo.orangehrmlive.com/,URL,Get:/web/index.php/auth/login,NA,NA,Navigate,https://opensource-demo.orangehrmlive.com/web/index.php/auth/login,Xpath,//h5[normalize-space()='Login'],
+Orange_HRM,,Think Time on Login Page Load,Login_Button,,//button[normalize-space()='Login'],Xpath,ThinkTime,300,Xpath,//h5[normalize-space()='Login'],
+Orange_HRM,,Click On Username,Username,,//input[@placeholder='Username'],Xpath,Click,,Xpath,//h5[normalize-space()='Login'],
+Orange_HRM,,Enter Username,Username,,//input[@placeholder='Username'],Xpath,Set_Text,Admin,Xpath,//h5[normalize-space()='Login'],
+Orange_HRM,,Click On Password,Password,,//input[@placeholder='Password'],Xpath,Click,,Xpath,//h5[normalize-space()='Login'],
+Orange_HRM,,Enter Password,Password,,//input[@placeholder='Password'],Xpath,Set_Text,admin123,Xpath,//h5[normalize-space()='Login'],
+Orange_HRM,,Click on Login Button,Login Button,Post:/web/index.php/dashboard/index,//button[normalize-space()='Login'],Xpath,Click,,Xpath,//h5[normalize-space()='Login'],
+Orange_HRM,TC02_OHRM_Dashboard,Wait for Dashboard Page to Load,Dashboard,Get:/web/index.php/dashboard/index,//h6[normalize-space()='Dashboard'],Xpath,CalculateFullPageLoadTime,,Xpath,//h6[normalize-space()='Dashboard'],

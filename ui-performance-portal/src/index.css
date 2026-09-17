@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    @apply overflow-x-hidden;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+}
+
+@layer components {
+  .page-content {
+    @apply min-w-0 w-full max-w-full overflow-x-hidden;
+  }
+
+  .data-table-shell {
+    @apply w-full max-w-full overflow-x-hidden;
+  }
+
+  .data-table-shell--scroll-y {
+    @apply overflow-y-auto;
+  }
+
+  .data-table {
+    @apply w-full table-fixed border-collapse;
+  }
+
+  .data-table thead th {
+    @apply overflow-hidden text-ellipsis whitespace-nowrap;
+  }
+
+  .data-table tbody td {
+    @apply overflow-hidden;
+  }
+
+  .data-table .cell-truncate {
+    @apply block truncate;
+  }
+
+  .data-table .input-field {
+    @apply min-w-0;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50;
+  }
+  .btn-danger {
+    @apply inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700;
+  }
+  .card {
+    @apply min-w-0 max-w-full overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm;
+  }
+  .input-field {
+    @apply w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+  }
+  .label {
+    @apply mb-1 block text-sm font-medium text-slate-700;
+  }
+}
