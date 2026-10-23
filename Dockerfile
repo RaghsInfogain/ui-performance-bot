@@ -15,20 +15,26 @@ FROM node:22-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends \
       default-jdk-headless maven python3 chromium curl \
     && rm -rf /var/lib/apt/lists/*
+# PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: browsers are installed below at build time; without it
+# the engine's Playwright retries downloads (incl. Firefox/WebKit) on every start.
 ENV JAVA_HOME=/usr/lib/jvm/default-java \
     CHROME_PATH=/usr/bin/chromium \
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
     NODE_ENV=production \
     PORT=3002
 WORKDIR /app
 
 # Test engine: fetch dependencies and compile once, so a test run doesn't wait on Maven,
-# then install the Chromium build its Playwright version expects.
+# then download the Chromium build its Playwright version expects. No --with-deps here:
+# Playwright 1.28 doesn't know Debian 12 and would try Ubuntu packages. The system
+# libraries Chromium needs come from the chromium package above and the portal's
+# newer Playwright (--with-deps, Debian 12 supported) below.
 COPY PlaywrightLoadTest_v3/pom.xml PlaywrightLoadTest_v3/
 RUN cd PlaywrightLoadTest_v3 && mvn -B -q dependency:go-offline
 COPY PlaywrightLoadTest_v3/ PlaywrightLoadTest_v3/
 RUN cd PlaywrightLoadTest_v3 \
  && mvn -B -q test-compile dependency:build-classpath -Dmdep.outputFile=/tmp/engine.cp \
- && java -cp "$(cat /tmp/engine.cp)" com.microsoft.playwright.CLI install --with-deps chromium
+ && java -cp "$(cat /tmp/engine.cp)" com.microsoft.playwright.CLI install chromium
 
 # API + the portal built in stage 1
 COPY ui-performance-portal/package*.json ui-performance-portal/
