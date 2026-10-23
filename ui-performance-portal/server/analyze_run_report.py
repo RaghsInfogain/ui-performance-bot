@@ -93,11 +93,16 @@ def parse_lighthouse_file(path: Path) -> dict[str, Any]:
             else:
                 diagnostics.append(entry)
 
-    url = data.get("finalDisplayedUrl") or data.get("requestedUrl") or data.get("finalUrl") or ""
+    # Key by the URL the engine was asked to test: navigation timing and the results CSV use it.
+    # finalDisplayedUrl is where redirects ended (e.g. /page.php -> /page) and would split one
+    # page into two half-empty rows.
+    url = data.get("requestedUrl") or data.get("finalDisplayedUrl") or data.get("finalUrl") or ""
+    final_url = data.get("finalDisplayedUrl") or data.get("finalUrl") or url
 
     return {
         "url": url,
         "urlKey": normalize_url(url),
+        "finalUrl": final_url,
         "lighthouseFile": path.name,
         "lighthouseVersion": data.get("lighthouseVersion", ""),
         "fetchTime": data.get("fetchTime", ""),
@@ -268,6 +273,7 @@ def compute_practical_metrics(milestones: dict[str, Any]) -> dict[str, Any]:
     fs = float(milestones.get("fetchStart") or rs or 0)
     di = float(milestones.get("domInteractive") or 0)
     dcle = float(milestones.get("domContentLoadedEventEnd") or 0)
+    dc = float(milestones.get("domComplete") or 0)
     le = float(milestones.get("loadEventEnd") or 0)
 
     dns = _dur(dls, dle)
@@ -277,8 +283,15 @@ def compute_practical_metrics(milestones: dict[str, Any]) -> dict[str, Any]:
     server_wait = _dur(ce, resp_s)
     document_fetch = _dur(fs, resp_e)
     dom_build = _dur(resp_e, di)
-    script_time = _dur(di, dcle)
-    load_event = _dur(dcle, le) if dcle > 0 else _dur(di, le)
+    # Older captures lack domContentLoadedEventEnd; split at domComplete instead so the
+    # post-interactive time isn't reported as 0 ms scripts + one large load event.
+    script_end = dcle if dcle > 0 else dc
+    script_time = _dur(di, script_end) if script_end > 0 else 0
+    load_event = _dur(script_end, le) if script_end > 0 else _dur(di, le)
+    script_formula = ("domContentLoadedEventEnd − domInteractive" if dcle > 0
+                      else "domComplete − domInteractive")
+    load_formula = ("loadEventEnd − domContentLoadedEventEnd" if dcle > 0
+                    else "loadEventEnd − domComplete")
     page_load = _dur(ns, le) if ns > 0 else 0
 
     return {
@@ -289,8 +302,8 @@ def compute_practical_metrics(milestones: dict[str, Any]) -> dict[str, Any]:
         "serverWait": {"value": server_wait, "formula": "responseStart − connectEnd", "purpose": "Queue + server processing before first byte"},
         "documentFetch": {"value": document_fetch, "formula": "responseEnd − fetchStart", "purpose": "Network trip including DNS, TCP, and response"},
         "domBuild": {"value": dom_build, "formula": "domInteractive − responseEnd", "purpose": "HTML parse and DOM tree construction"},
-        "scriptTime": {"value": script_time, "formula": "domContentLoadedEventEnd − domInteractive", "purpose": "Blocking script load/execution during parse"},
-        "loadEvent": {"value": load_event, "formula": "loadEventEnd − domContentLoadedEventEnd", "purpose": "Subresources after DOMContentLoaded"},
+        "scriptTime": {"value": script_time, "formula": script_formula, "purpose": "Scripts and sub-resources after the DOM is interactive"},
+        "loadEvent": {"value": load_event, "formula": load_formula, "purpose": "Remaining sub-resources and the load event"},
         "pageLoad": {"value": page_load, "formula": "loadEventEnd − navigationStart", "purpose": "Total page load time"},
     }
 

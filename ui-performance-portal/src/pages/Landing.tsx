@@ -106,9 +106,9 @@ export default function Landing() {
         </p>
         <div className="landing__feature-grid">
           {([
-            [Globe, 'Website crawler', 'Same-domain link discovery with a live URL count. Export the full list as CSV or save it straight into Script Studio as a suite.'],
+            [Globe, 'Website crawler', 'Same-domain link discovery with a live URL count. Export the full list as CSV or save it as a crawled script from New Script.'],
             [Settings, 'Configuration', 'Browser, headless mode, duration, think-time, multi-threading and feature flags — validated and versioned automatically.'],
-            [Clapperboard, 'Test cases & Script Studio', 'Maintain static and scripted suites side by side, or record a flow with the built-in browser recorder — one library for every script.'],
+            [Clapperboard, 'Scripts library', 'Create static, scripted, or crawled scripts from one New Script flow — edit steps, sync legacy suites, and record UI interactions.'],
             [Play, 'Static & scripted runs', 'Spin up N Playwright browsers with Lighthouse for static suites, or drive scripted flows through the multi-threaded engine.'],
             [History, 'Run history', 'Track status and progress for every run, watch results stream in as they finish, and stop or delete on demand.'],
             [BarChart3, 'Reports & analytics', 'Browse every run, export raw metrics, or open the complete report with charts, findings and a go-live recommendation.'],

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
-  LayoutDashboard, Settings, Globe, FileText, Play,
-  History, BarChart3, Zap, Clapperboard, LogOut,
-  PanelLeftClose, PanelLeftOpen,
+  LayoutDashboard, Settings, Play, Globe, History,
+  BarChart3, Zap, LogOut,
+  PanelLeftClose, PanelLeftOpen, ScrollText, Video,
 } from 'lucide-react';
 import { NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
@@ -11,13 +11,13 @@ const STORAGE_KEY = 'uipb.sidebar.collapsed';
 
 const navItems = [
   { to: '/app', icon: LayoutDashboard, label: 'Dashboard', desc: 'Overview & quick actions', end: true },
-  { to: '/app/crawler', icon: Globe, label: 'Website Crawler', desc: 'Discover URLs' },
   { to: '/app/configuration', icon: Settings, label: 'Configuration', desc: 'Browser, duration, flags' },
-  { to: '/app/test-cases', icon: FileText, label: 'Test Cases', desc: 'Static & scripted suites' },
-  { to: '/app/script-studio', icon: Clapperboard, label: 'Script Studio', desc: 'Build & record flows' },
+  { to: '/app/scripts', icon: ScrollText, label: 'Scripts', desc: 'View, edit & create scripts' },
+  { to: '/app/crawler', icon: Globe, label: 'Crawler', desc: 'Discover same-domain URLs' },
+  { to: '/app/recorder', icon: Video, label: 'Recorder', desc: 'Capture flows from browser' },
   { to: '/app/run-test', icon: Play, label: 'Run Test', desc: 'Start execution' },
-  { to: '/app/runs', icon: History, label: 'Run History', desc: 'Monitor & manage runs' },
-  { to: '/app/reports', icon: BarChart3, label: 'Reports & Analytics', desc: 'Results & CSV export' },
+  { to: '/app/runs', icon: History, label: 'Run History', desc: 'Monitor live and past runs' },
+  { to: '/app/reports', icon: BarChart3, label: 'Run & Report', desc: 'Reports, schedules & compare' },
 ];
 
 export function Sidebar() {

@@ -11,6 +11,11 @@ import java.util.Properties;
 public class Main {
 
     public static String getPropertiesFilePath() {
+        // Per-run override so the portal can launch several engines concurrently, each with its own config
+        String fromEnv = System.getenv("UIPB_PROPERTIES_FILE");
+        if (fromEnv != null && !fromEnv.trim().isEmpty() && new File(fromEnv.trim()).exists()) {
+            return new File(fromEnv.trim()).getAbsolutePath();
+        }
         String relative = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "Properties.properties";
         File fromCwd = new File(System.getProperty("user.dir"), relative);
         if (fromCwd.exists()) return fromCwd.getAbsolutePath();

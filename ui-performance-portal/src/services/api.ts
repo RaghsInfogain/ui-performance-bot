@@ -4,6 +4,7 @@
 import type {
   AppConfig, CrawledUrl, ScriptedStep, StaticResultRow,
   StaticTestCase, ScriptedResultRow, TestRun, RunMode, TestScript, RunReportAnalysis,
+  ExecutionSettings, BatchRunResult, ScriptTestData, TestDataMode,
 } from '../types';
 
 const BASE = '/api';
@@ -199,6 +200,13 @@ export const api = {
     return request<TestRun>('/runs', { method: 'POST', body: JSON.stringify(options) });
   },
 
+  async startBatchRun(options: {
+    scripts: { scriptId: string; loadPercent: number }[];
+    execution: ExecutionSettings;
+  }): Promise<BatchRunResult> {
+    return request<BatchRunResult>('/runs/batch', { method: 'POST', body: JSON.stringify(options) });
+  },
+
   async stopRun(runId: string): Promise<void> {
     await request(`/runs/${runId}/stop`, { method: 'POST' });
   },
@@ -211,8 +219,8 @@ export const api = {
     return request<StaticResultRow[]>(`/runs/${runId}/results/static`);
   },
 
-  async getScriptedResults(_runId: string): Promise<ScriptedResultRow[]> {
-    return [];
+  async getScriptedResults(runId: string): Promise<ScriptedResultRow[]> {
+    return request<ScriptedResultRow[]>(`/runs/${runId}/results/scripted`);
   },
 
   async exportRunCsv(runId: string, _mode: RunMode): Promise<Blob> {
@@ -225,19 +233,58 @@ export const api = {
     return { url: pageUrl };
   },
 
-  async getRunReport(runId: string): Promise<{
+  async getRunReport(runId: string, opts?: { regenerate?: boolean }): Promise<{
     runId: string;
     results: StaticResultRow[];
     analysis: RunReportAnalysis;
     pages?: import('../types').RunReportPage[];
     llmAnalysis?: import('../types').GoLiveAnalysis | null;
-    meta?: import('../types').RunReportMeta;
+    meta?: import('../types').RunReportMeta & { cached?: boolean; generatedAt?: string; generator?: string };
   }> {
-    return request(`/runs/${runId}/report`);
+    const q = opts?.regenerate ? '?regenerate=1' : '';
+    return request(`/runs/${runId}/report${q}`);
+  },
+
+  async regenerateRunReport(runId: string): Promise<{
+    runId?: string;
+    results: StaticResultRow[];
+    analysis: RunReportAnalysis;
+    pages?: import('../types').RunReportPage[];
+    llmAnalysis?: import('../types').GoLiveAnalysis | null;
+    meta?: import('../types').RunReportMeta & { cached?: boolean; generatedAt?: string; generator?: string };
+  }> {
+    return request(`/runs/${runId}/report/regenerate`, { method: 'POST' });
   },
 
   getRunReportHtmlUrl(runId: string): string {
     return `${BASE}/runs/${runId}/report.html`;
+  },
+
+  async compareRuns(baseline: string, current: string) {
+    return request<import('../types').RunComparison>(
+      `/compare-runs?baseline=${encodeURIComponent(baseline)}&current=${encodeURIComponent(current)}`,
+    );
+  },
+
+  async listSchedules() {
+    return request<import('../types').RunSchedule[]>('/schedules');
+  },
+
+  async saveSchedule(payload: Partial<import('../types').RunSchedule> & { name: string; frequency: string }) {
+    if (payload.id) {
+      return request<import('../types').RunSchedule>(`/schedules/${payload.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+    }
+    return request<import('../types').RunSchedule>('/schedules', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteSchedule(id: string) {
+    await request(`/schedules/${id}`, { method: 'DELETE' });
   },
 
   async syncLegacyScripts(): Promise<{ synced: number; scripts: TestScript[] }> {
@@ -266,8 +313,36 @@ export const api = {
     type: 'static' | 'scripted';
     description?: string;
     rows: unknown[];
+    source?: 'studio' | 'legacy' | 'crawled';
+    crawlRunId?: string | null;
   }): Promise<TestScript> {
     return request<TestScript>('/scripts', { method: 'POST', body: JSON.stringify(payload) });
+  },
+
+  async getScriptData(id: string): Promise<ScriptTestData | null> {
+    return request<ScriptTestData | null>(`/scripts/${encodeURIComponent(id)}/data`);
+  },
+
+  /** Upload (or replace) the script's test data CSV; sent as raw text. */
+  async uploadScriptData(id: string, csv: string, fileName: string, mode?: TestDataMode): Promise<ScriptTestData> {
+    const q = new URLSearchParams({ fileName, ...(mode ? { mode } : {}) });
+    return request<ScriptTestData>(`/scripts/${encodeURIComponent(id)}/data?${q}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'text/csv' },
+      body: csv,
+    });
+  },
+
+  async setScriptDataMode(id: string, mode: TestDataMode): Promise<ScriptTestData> {
+    return request<ScriptTestData>(`/scripts/${encodeURIComponent(id)}/data?mode=${mode}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'text/csv' },
+      body: '',
+    });
+  },
+
+  async deleteScriptData(id: string): Promise<void> {
+    await request(`/scripts/${encodeURIComponent(id)}/data`, { method: 'DELETE' });
   },
 
   async deleteScript(id: string): Promise<void> {
@@ -286,15 +361,162 @@ export const api = {
     return request('/recorder/start', { method: 'POST', body: JSON.stringify({ url }) });
   },
 
-  async getRecorderStatus(sessionId: string): Promise<{ sessionId: string; stepCount: number; active: boolean }> {
+  async getRecorderStatus(sessionId: string): Promise<{
+    sessionId: string;
+    stepCount: number;
+    active: boolean;
+    startUrl?: string;
+    startedAt?: number;
+    steps?: Array<{
+      index: number;
+      action: string;
+      testStep?: string;
+      selector?: string;
+      locatorStrategy?: string;
+      locatorLabel?: string;
+      locatorCandidates?: Array<{ strategy: string; selector: string; label?: string; unique?: boolean; score?: number }>;
+      parameter?: string;
+      pageUrl?: string;
+      objectName?: string;
+    }>;
+  }> {
     return request(`/recorder/${sessionId}/status`);
   },
 
-  async stopRecorder(sessionId: string, testCaseName?: string): Promise<{ testCaseName: string; steps: Array<Partial<ScriptedStep> & { objectName?: string }> } | null> {
+  async stopRecorder(sessionId: string, testCaseName?: string): Promise<{
+    testCaseName: string;
+    steps: Array<Partial<ScriptedStep> & { objectName?: string }>;
+    scripted?: Array<Record<string, unknown>>;
+    static?: Array<{ transactionName: string; pageUrl: string; elementIdentifier: string; elementSelector: string }>;
+    stepCount?: number;
+    urlCount?: number;
+    recordingId?: string | null;
+    recording?: RecordingMeta | null;
+  } | null> {
     return request(`/recorder/${sessionId}/stop`, { method: 'POST', body: JSON.stringify({ testCaseName }) });
   },
 
   async cancelRecorder(sessionId: string): Promise<void> {
     await request(`/recorder/${sessionId}/cancel`, { method: 'POST' });
   },
+
+  async listRecordings(): Promise<RecordingMeta[]> {
+    return request('/recordings');
+  },
+
+  async getRecording(id: string): Promise<RecordingDetail> {
+    return request(`/recordings/${id}`);
+  },
+
+  async saveRecording(payload: {
+    name: string;
+    startUrl?: string;
+    steps: unknown[];
+  }): Promise<RecordingDetail> {
+    return request('/recordings', { method: 'POST', body: JSON.stringify(payload) });
+  },
+
+  async updateRecording(id: string, payload: {
+    name?: string;
+    startUrl?: string;
+    steps?: unknown[];
+  }): Promise<RecordingDetail> {
+    return request(`/recordings/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+
+  async deleteRecording(id: string): Promise<void> {
+    await request(`/recordings/${id}`, { method: 'DELETE' });
+  },
+
+  async generateScriptFromRecording(id: string, payload: {
+    type: 'static' | 'scripted';
+    name?: string;
+  }): Promise<TestScript> {
+    return request(`/recordings/${id}/generate-script`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async replayRecording(id: string, payload?: {
+    steps?: unknown[];
+    startUrl?: string;
+    headless?: boolean;
+    stepTimeout?: number;
+    name?: string;
+  }): Promise<ReplayResult> {
+    return request(`/recordings/${id}/replay`, {
+      method: 'POST',
+      body: JSON.stringify(payload || {}),
+    });
+  },
+
+  async replaySteps(payload: {
+    startUrl?: string;
+    steps: unknown[];
+    headless?: boolean;
+    stepTimeout?: number;
+    name?: string;
+  }): Promise<ReplayResult> {
+    return request('/recorder/replay', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getReplayStatus(replayId: string): Promise<ReplayResult> {
+    return request(`/recorder/replay/${replayId}`);
+  },
+
+  replayReportUrl(replayId: string): string {
+    return `${BASE}/recorder/replay/${replayId}/report.csv`;
+  },
+};
+
+export type ReplayStepResult = {
+  index: number;
+  action: string;
+  testStep?: string;
+  transactionName?: string;
+  selector?: string;
+  status: 'PASS' | 'FAIL' | 'SKIP';
+  error?: string;
+  durationMs?: number;
+  timestamp?: string;
+  /** Same-site server calls (page loads, XHR, fetch) made while this step ran. */
+  requests?: CapturedRequest[];
+};
+
+export type CapturedRequest = { method: string; url: string; type: string };
+
+export type ReplayResult = {
+  replayId?: string;
+  status?: 'running' | 'completed' | 'failed';
+  ok: boolean;
+  passed: number;
+  failed: number;
+  skipped?: number;
+  total: number;
+  currentStep?: number;
+  results: ReplayStepResult[];
+  reportPath?: string;
+  reportCsv?: string;
+  reportJson?: string;
+  error?: string;
+};
+
+export type RecordingMeta = {
+  id: string;
+  name: string;
+  startUrl: string;
+  stepCount: number;
+  urlCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RecordingDetail = RecordingMeta & {
+  steps: Array<Record<string, unknown>>;
+  scripted?: Array<Record<string, unknown>>;
+  static?: Array<{ transactionName: string; pageUrl: string; elementIdentifier: string; elementSelector: string }>;
 };

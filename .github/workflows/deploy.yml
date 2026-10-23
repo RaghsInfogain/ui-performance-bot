@@ -1,0 +1,75 @@
+# Deploy: on every push to main (or "Run workflow"), re-run CI on GitHub, then build and
+# start the app on the self-hosted runner installed on the deployment machine (the local
+# Mac's Docker). Building there produces a native image for that machine's CPU.
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false      # never interrupt a deploy half-way
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    # Only main reaches this job; the runner's custom label keeps other jobs off the Mac.
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, ui-perf-local]
+    environment:
+      name: production
+      url: http://localhost:8080
+    timeout-minutes: 60
+    env:
+      # launchd starts the runner with a minimal PATH; Docker Desktop's CLI lives here
+      PATH: /usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
+      IMAGE_TAG: sha-${{ github.sha }}
+      APP_PORT: "8080"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Docker is running
+        run: docker info --format 'Docker {{.ServerVersion}} on {{.OSType}}/{{.Architecture}}'
+
+      - name: Write runtime settings
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          umask 077
+          {
+            echo "DB_PASSWORD=$DB_PASSWORD"
+            echo "OPENAI_API_KEY=$OPENAI_API_KEY"
+            echo "IMAGE_TAG=$IMAGE_TAG"
+            echo "APP_PORT=$APP_PORT"
+          } > .env
+
+      - name: Build the image
+        run: docker compose build app
+
+      - name: Start (or replace) the containers
+        run: docker compose up -d --remove-orphans
+
+      - name: Health check
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS "http://localhost:$APP_PORT/api/health"; then
+              echo; echo "Deployed ${IMAGE_TAG} at http://localhost:${APP_PORT}"; exit 0
+            fi
+            sleep 5
+          done
+          echo "App did not become healthy — last logs:"
+          docker compose logs --tail 100 app
+          exit 1
+
+      - name: Remove old images
+        if: success()
+        run: docker image prune -f      # dangling layers left by earlier builds

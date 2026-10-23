@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Eye, Square, Trash2, BarChart3 } from 'lucide-react';
 import { PageHeader } from '../components/layout/AppLayout';
 import { DataTable } from '../components/common/DataTable';
 import { StatusBadge } from '../components/common/Badges';
 import { api } from '../services/api';
-import type { TestRun } from '../types';
+import type { BatchRunResult, TestRun } from '../types';
 
 export default function Runs() {
   const [runs, setRuns] = useState<TestRun[]>([]);
+  const batch = (useLocation().state as { batch?: BatchRunResult } | null)?.batch;
 
   const load = () => api.getRuns().then(setRuns);
 
@@ -38,6 +39,22 @@ export default function Runs() {
   return (
     <>
       <PageHeader title="Run History" subtitle="Monitor active runs and browse past executions" actions={<Link to="/app/run-test" className="btn-primary">New Run</Link>} />
+
+      {batch && (
+        <div className="mb-4 rounded-lg bg-brand-50 p-4 text-sm text-slate-700">
+          <div className="mb-1 font-semibold">
+            Started {batch.runs.length} scripts with {batch.totalThreads} total thread{batch.totalThreads === 1 ? '' : 's'}
+          </div>
+          <ul className="space-y-0.5">
+            {batch.runs.map((r) => (
+              <li key={r.runId}>
+                <Link to={`/app/runs/${r.runId}`} className="font-mono font-semibold text-brand-600 underline">{r.runId}</Link>
+                {' '}— {r.scriptName} · {r.loadPercent}% · {r.multiThreading} thread{r.multiThreading === 1 ? '' : 's'}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="card overflow-hidden p-0">
         <DataTable tableClassName="text-left text-sm">

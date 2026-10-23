@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  BarChart3, Download, Trash2, Eye, RefreshCw, Search, Filter,
+  BarChart3, Download, Trash2, Eye, RefreshCw, Search, Filter, Plus, CalendarClock, GitCompare,
 } from 'lucide-react';
 import { PageHeader } from '../components/layout/AppLayout';
 import { DataTable } from '../components/common/DataTable';
 import { StatusBadge, ScoreBadge } from '../components/common/Badges';
 import { api } from '../services/api';
 import { formatDuration } from '../utils/formatDuration';
-import type { RunMode, RunStatus, TestRun } from '../types';
+import type { RunMode, RunStatus, TestRun, TestScript, RunSchedule } from '../types';
+
+type Tab = 'runs' | 'schedule' | 'compare';
+
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function formatTestDuration(sec: number | null | undefined) {
   if (sec == null || sec === 0) return 'No limit';
@@ -24,17 +28,39 @@ function runElapsed(run: TestRun): string {
 }
 
 export default function Reports() {
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<Tab>('runs');
   const [runs, setRuns] = useState<TestRun[]>([]);
+  const [scripts, setScripts] = useState<TestScript[]>([]);
+  const [schedules, setSchedules] = useState<RunSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [modeFilter, setModeFilter] = useState<'all' | RunMode>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | RunStatus>('all');
   const [exportingId, setExportingId] = useState<string | null>(null);
+  const [baselineId, setBaselineId] = useState('');
+  const [currentId, setCurrentId] = useState('');
+  const [schedForm, setSchedForm] = useState({
+    name: 'Nightly performance run',
+    frequency: 'daily' as 'hourly' | 'daily' | 'weekly',
+    cronHour: 2,
+    cronMinute: 0,
+    cronWeekday: 1,
+    mode: 'static' as RunMode,
+    scriptId: '',
+    enabled: true,
+  });
 
   const load = async () => {
     try {
-      const data = await api.getRuns();
-      setRuns(data);
+      const [runData, scriptData, schedData] = await Promise.all([
+        api.getRuns(),
+        api.listScripts().catch(() => [] as TestScript[]),
+        api.listSchedules().catch(() => [] as RunSchedule[]),
+      ]);
+      setRuns(runData);
+      setScripts(scriptData);
+      setSchedules(schedData);
     } finally {
       setLoading(false);
     }
@@ -107,17 +133,207 @@ export default function Reports() {
   const canViewReport = (run: TestRun) =>
     run.urlsCompleted > 0 || run.status === 'completed' || run.status === 'stopped';
 
+  const completedRuns = useMemo(
+    () => runs.filter((r) => r.status === 'completed' || r.status === 'stopped' || r.urlsCompleted > 0),
+    [runs],
+  );
+
+  const saveSchedule = async () => {
+    try {
+      await api.saveSchedule({
+        name: schedForm.name,
+        frequency: schedForm.frequency,
+        cronHour: schedForm.cronHour,
+        cronMinute: schedForm.cronMinute,
+        cronWeekday: schedForm.frequency === 'weekly' ? schedForm.cronWeekday : null,
+        mode: schedForm.mode,
+        scriptId: schedForm.scriptId || null,
+        enabled: schedForm.enabled,
+      });
+      alert('Schedule saved');
+      load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to save schedule');
+    }
+  };
+
+  const openCompare = () => {
+    if (!baselineId || !currentId) {
+      alert('Select baseline and current runs');
+      return;
+    }
+    if (baselineId === currentId) {
+      alert('Select two different runs');
+      return;
+    }
+    navigate(`/app/compare?baseline=${encodeURIComponent(baselineId)}&current=${encodeURIComponent(currentId)}`);
+  };
+
   return (
     <>
       <PageHeader
-        title="Reports & Analytics"
-        subtitle="Browse all test runs, open complete reports, and export results"
+        title="Run & Report"
+        subtitle="Launch runs, open saved reports, schedule recurring tests, and compare performance"
         actions={
-          <button onClick={load} className="btn-secondary" disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={load} className="btn-secondary" disabled={loading}>
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+            </button>
+            <Link to="/app/run-test" className="btn-primary">
+              <Plus className="h-4 w-4" /> New Run
+            </Link>
+          </div>
         }
       />
+
+      <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-200">
+        {([
+          ['runs', 'Runs & Reports', BarChart3],
+          ['schedule', 'Schedules', CalendarClock],
+          ['compare', 'Compare', GitCompare],
+        ] as const).map(([id, label, Icon]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-semibold ${
+              tab === id ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-500'
+            }`}
+          >
+            <Icon className="h-4 w-4" /> {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'schedule' && (
+        <div className="space-y-4">
+          <div className="card">
+            <h3 className="mb-3 font-semibold">Create schedule</h3>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
+                <label className="label">Name</label>
+                <input className="input-field" value={schedForm.name} onChange={(e) => setSchedForm({ ...schedForm, name: e.target.value })} />
+              </div>
+              <div>
+                <label className="label">Frequency</label>
+                <select className="input-field" value={schedForm.frequency} onChange={(e) => setSchedForm({ ...schedForm, frequency: e.target.value as typeof schedForm.frequency })}>
+                  <option value="hourly">Hourly</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                </select>
+              </div>
+              {schedForm.frequency !== 'hourly' && (
+                <div>
+                  <label className="label">Hour (0–23)</label>
+                  <input type="number" min={0} max={23} className="input-field" value={schedForm.cronHour} onChange={(e) => setSchedForm({ ...schedForm, cronHour: Number(e.target.value) })} />
+                </div>
+              )}
+              <div>
+                <label className="label">Minute (0–59)</label>
+                <input type="number" min={0} max={59} className="input-field" value={schedForm.cronMinute} onChange={(e) => setSchedForm({ ...schedForm, cronMinute: Number(e.target.value) })} />
+              </div>
+              {schedForm.frequency === 'weekly' && (
+                <div>
+                  <label className="label">Weekday</label>
+                  <select className="input-field" value={schedForm.cronWeekday} onChange={(e) => setSchedForm({ ...schedForm, cronWeekday: Number(e.target.value) })}>
+                    {WEEKDAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="label">Mode</label>
+                <select className="input-field" value={schedForm.mode} onChange={(e) => setSchedForm({ ...schedForm, mode: e.target.value as RunMode })}>
+                  <option value="static">Static</option>
+                  <option value="scripted">Scripted</option>
+                </select>
+              </div>
+              <div>
+                <label className="label">Script (optional)</label>
+                <select className="input-field" value={schedForm.scriptId} onChange={(e) => setSchedForm({ ...schedForm, scriptId: e.target.value })}>
+                  <option value="">— Default / legacy —</option>
+                  {scripts.filter((s) => s.type === schedForm.mode || (schedForm.mode === 'static' && s.source === 'crawled')).map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <button type="button" onClick={saveSchedule} className="btn-primary mt-4 text-sm">
+              <CalendarClock className="h-4 w-4" /> Save Schedule
+            </button>
+          </div>
+          <div className="card overflow-hidden p-0">
+            <div className="border-b px-4 py-3 font-semibold">Active schedules ({schedules.length})</div>
+            <DataTable tableClassName="text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase text-slate-400">
+                <tr>
+                  <th className="px-3 py-2">Name</th>
+                  <th className="px-3 py-2">Frequency</th>
+                  <th className="px-3 py-2">Next run</th>
+                  <th className="px-3 py-2">Last run</th>
+                  <th className="px-3 py-2">Enabled</th>
+                  <th className="px-3 py-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {schedules.map((s) => (
+                  <tr key={s.id} className="border-t border-slate-50">
+                    <td className="px-3 py-2 font-medium">{s.name}</td>
+                    <td className="px-3 py-2 capitalize">{s.frequency}</td>
+                    <td className="px-3 py-2 text-xs">{s.nextRunAt ? new Date(s.nextRunAt).toLocaleString() : '—'}</td>
+                    <td className="px-3 py-2 text-xs">
+                      {s.lastRunId ? <Link to={`/app/runs/${s.lastRunId}/report`} className="text-brand-600 hover:underline">{s.lastRunId}</Link> : '—'}
+                    </td>
+                    <td className="px-3 py-2">{s.enabled ? 'Yes' : 'No'}</td>
+                    <td className="px-3 py-2">
+                      <button type="button" className="text-xs text-red-600" onClick={async () => {
+                        if (!confirm(`Delete schedule "${s.name}"?`)) return;
+                        await api.deleteSchedule(s.id);
+                        load();
+                      }}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+                {!schedules.length && <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-400">No schedules yet</td></tr>}
+              </tbody>
+            </DataTable>
+          </div>
+        </div>
+      )}
+
+      {tab === 'compare' && (
+        <div className="card max-w-2xl">
+          <h3 className="mb-2 font-semibold">Compare two runs</h3>
+          <p className="mb-4 text-sm text-slate-500">
+            Identify whether performance improved or degraded using the same metric heads as a complete report.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="label">Baseline run</label>
+              <select className="input-field" value={baselineId} onChange={(e) => setBaselineId(e.target.value)}>
+                <option value="">— Select —</option>
+                {completedRuns.map((r) => (
+                  <option key={r.runId} value={r.runId}>{r.runId} · {r.mode}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">Current run</label>
+              <select className="input-field" value={currentId} onChange={(e) => setCurrentId(e.target.value)}>
+                <option value="">— Select —</option>
+                {completedRuns.map((r) => (
+                  <option key={r.runId} value={r.runId}>{r.runId} · {r.mode}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <button type="button" onClick={openCompare} className="btn-primary mt-4">
+            <GitCompare className="h-4 w-4" /> Generate Comparison Report
+          </button>
+        </div>
+      )}
+
+      {tab === 'runs' && (
+        <>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <div className="card">
@@ -364,6 +580,8 @@ export default function Reports() {
           </tbody>
         </DataTable>
       </div>
+        </>
+      )}
     </>
   );
 }

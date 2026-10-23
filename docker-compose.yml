@@ -1,0 +1,44 @@
+# UI Performance Bot — app + PostgreSQL. Data lives on named volumes, so rebuilding
+# or redeploying the app keeps the database and test results.
+#   DB_PASSWORD     required (the deploy workflow writes it to .env)
+#   APP_PORT        host port for the portal, default 8080
+#   OPENAI_API_KEY  optional, enables the LLM go-live assessment
+name: ui-performance-bot
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: uiperformancebot
+      POSTGRES_USER: uiperf
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uiperf -d uiperformancebot"]
+      interval: 5s
+      retries: 20
+
+  app:
+    build: .
+    image: ui-performance-bot:${IMAGE_TAG:-local}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://uiperf:${DB_PASSWORD}@db:5432/uiperformancebot
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      PORT: 3002
+    ports:
+      - "${APP_PORT:-8080}:3002"
+    shm_size: 1gb
+    volumes:
+      - results:/app/Results
+      - screenshots:/app/screenshots
+
+volumes:
+  pgdata:
+  results:
+  screenshots:

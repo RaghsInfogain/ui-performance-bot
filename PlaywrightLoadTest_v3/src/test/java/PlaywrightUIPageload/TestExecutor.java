@@ -266,7 +266,7 @@ public class TestExecutor {
                 long timeout = System.currentTimeMillis() + 5000;
                 while (System.currentTimeMillis() < timeout) {
                     try {
-                        elementHandle = page.querySelector(elementSelector);
+                        elementHandle = page.querySelector(Action.playwrightSelector(elementSelector));
                         if (elementHandle != null && elementHandle.isVisible()) {
                             long endTime = System.currentTimeMillis();
                             elementLoadTime = String.valueOf(endTime - startTime);
@@ -509,22 +509,44 @@ public class TestExecutor {
             page.navigate(pageUrl, new Page.NavigateOptions().setTimeout(90000));
             page.waitForLoadState(LoadState.DOMCONTENTLOADED, new Page.WaitForLoadStateOptions().setTimeout(90000));
 
+            // Wait for a load-confirming element (default body when CSV has blank/NA)
+            String waitSelector = elementSelector;
+            if (waitSelector == null || waitSelector.trim().isEmpty()
+                    || "NA".equalsIgnoreCase(waitSelector.trim())
+                    || "N/A".equalsIgnoreCase(waitSelector.trim())) {
+                waitSelector = "body";
+            }
             String elementLoadTime = "N/A";
-            if (elementSelector != null && !elementSelector.isEmpty()) {
-                long timeout = System.currentTimeMillis() + 10000;
-                while (System.currentTimeMillis() < timeout) {
-                    try {
-                        ElementHandle elementHandle = page.querySelector(elementSelector);
-                        if (elementHandle != null && elementHandle.isVisible()) {
-                            elementLoadTime = String.valueOf(System.currentTimeMillis() - startTime);
-                            break;
-                        }
-                    } catch (Exception ignored) {
+            long timeout = System.currentTimeMillis() + 15000;
+            while (System.currentTimeMillis() < timeout) {
+                try {
+                    ElementHandle elementHandle = page.querySelector(Action.playwrightSelector(waitSelector));
+                    if (elementHandle != null && elementHandle.isVisible()) {
+                        elementLoadTime = String.valueOf(System.currentTimeMillis() - startTime);
+                        break;
                     }
+                } catch (Exception ignored) {
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            if ("N/A".equals(elementLoadTime)) {
+                // Fallback: document body confirms interactive document
+                try {
+                    page.waitForSelector("body",
+                            new Page.WaitForSelectorOptions()
+                                    .setState(com.microsoft.playwright.options.WaitForSelectorState.VISIBLE)
+                                    .setTimeout(5000));
+                    elementLoadTime = String.valueOf(System.currentTimeMillis() - startTime);
+                } catch (Exception ignored) {
                 }
             }
 
-            String timingJson = (String) page.evaluate("() => { const t = window.performance.timing; return JSON.stringify({ navigationStart: t.navigationStart, domainLookupStart: t.domainLookupStart, domainLookupEnd: t.domainLookupEnd, connectStart: t.connectStart, connectEnd: t.connectEnd, requestStart: t.requestStart, responseStart: t.responseStart, responseEnd: t.responseEnd, domLoading: t.domLoading, domInteractive: t.domInteractive, domComplete: t.domComplete, loadEventEnd: t.loadEventEnd }); }");
+            String timingJson = (String) page.evaluate("() => { const t = window.performance.timing; return JSON.stringify({ navigationStart: t.navigationStart, domainLookupStart: t.domainLookupStart, domainLookupEnd: t.domainLookupEnd, connectStart: t.connectStart, connectEnd: t.connectEnd, requestStart: t.requestStart, responseStart: t.responseStart, responseEnd: t.responseEnd, domLoading: t.domLoading, domInteractive: t.domInteractive, domContentLoadedEventStart: t.domContentLoadedEventStart, domContentLoadedEventEnd: t.domContentLoadedEventEnd, domComplete: t.domComplete, loadEventStart: t.loadEventStart, loadEventEnd: t.loadEventEnd, fetchStart: t.fetchStart, secureConnectionStart: t.secureConnectionStart, redirectStart: t.redirectStart, redirectEnd: t.redirectEnd }); }");
             return new NavMeasurement(elementLoadTime, new JSONObject(timingJson), true);
 
         } catch (Exception e) {
