@@ -1,98 +1,117 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Play, Globe, FileText, Zap, AlertCircle, Clapperboard } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { Play, AlertCircle, Search, Globe, FileText, Clapperboard, Scale } from 'lucide-react';
 import { PageHeader } from '../components/layout/AppLayout';
+import {
+  ExecutionSettingsForm, SCRIPT_CATEGORY_LABELS, allocateThreads, defaultExecution, scriptCategory,
+  type ScriptCategory,
+} from '../components/run/ExecutionSettingsForm';
 import { api } from '../services/api';
-import type { AppConfig, BrowserType, RunMode, TestScript } from '../types';
+import type { ExecutionSettings, TestScript } from '../types';
 
-const defaultExecution = (c: AppConfig) => ({
-  browserType: c.browserType,
-  headlessMode: c.headlessMode,
-  testDurationSeconds: c.testDurationSeconds ?? 0,
-  multiThreading: c.multiThreading,
-  thinkTime: c.thinkTime,
-});
+const CATEGORY_ICONS: Record<ScriptCategory, typeof Globe> = {
+  crawled: Globe,
+  scripted: FileText,
+  navigation: Clapperboard,
+};
+
+const CATEGORY_BADGE: Record<ScriptCategory, string> = {
+  crawled: 'bg-sky-50 text-sky-800 ring-sky-200',
+  scripted: 'bg-violet-50 text-violet-800 ring-violet-200',
+  navigation: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+};
+
+/** Even integer split of 100% across the given ids; remainder goes to the first ones. */
+function evenSplit(ids: string[]): Record<string, number> {
+  if (!ids.length) return {};
+  const base = Math.floor(100 / ids.length);
+  let extra = 100 - base * ids.length;
+  const out: Record<string, number> = {};
+  for (const id of ids) {
+    out[id] = base + (extra > 0 ? 1 : 0);
+    if (extra > 0) extra -= 1;
+  }
+  return out;
+}
 
 export default function RunTest() {
   const navigate = useNavigate();
-  const [config, setConfig] = useState<AppConfig | null>(null);
-  const [mode, setMode] = useState<RunMode>('static');
-  const [testSuite, setTestSuite] = useState<'static' | 'crawled' | 'scripted'>('crawled');
-  const [useAutoCrawl, setUseAutoCrawl] = useState(false);
+  const [searchParams] = useSearchParams();
+  const preselected = useMemo(
+    () => searchParams.getAll('scriptId').flatMap((v) => v.split(',')).filter(Boolean),
+    [searchParams],
+  );
+
   const [scripts, setScripts] = useState<TestScript[]>([]);
-  const [scriptId, setScriptId] = useState('');
-  const [dataSource, setDataSource] = useState<'script' | 'legacy'>('script');
+  const [loadingScripts, setLoadingScripts] = useState(true);
+  const [filter, setFilter] = useState<'all' | ScriptCategory>('all');
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<string[]>([]);
+  const [loadPercent, setLoadPercent] = useState<Record<string, number>>({});
+  const [execution, setExecution] = useState<ExecutionSettings | null>(null);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
-  const [execution, setExecution] = useState<{
-    browserType: BrowserType;
-    headlessMode: boolean;
-    testDurationSeconds: number;
-    multiThreading: number;
-    thinkTime: number;
-  } | null>(null);
-  const [urlCountPreview, setUrlCountPreview] = useState<number | null>(null);
-  const lastCrawlId = sessionStorage.getItem('lastCrawlRunId');
 
   useEffect(() => {
-    api.getConfig().then((c) => {
-      setConfig(c);
-      setExecution(defaultExecution(c));
-      setMode(c.scriptedFlow ? 'scripted' : 'static');
-      setUseAutoCrawl(c.autoCrawl);
-      if (lastCrawlId) setTestSuite('crawled');
+    api.getConfig().then((c) => setExecution(defaultExecution(c))).catch(() => {
+      setExecution({ browserType: 'chrome', headlessMode: true, testDurationSeconds: 0, multiThreading: 1, thinkTime: 0 });
     });
-    api.listScripts().then(setScripts);
-  }, [lastCrawlId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadCount = async () => {
-      try {
-        if (dataSource === 'script' && scriptId) {
-          const script = await api.getScript(scriptId);
-          if (!cancelled) setUrlCountPreview(script.stepCount ?? script.rows?.length ?? 0);
-        } else if (mode === 'static' && testSuite === 'crawled' && lastCrawlId) {
-          const status = await api.getCrawlStatus(lastCrawlId);
-          if (!cancelled) setUrlCountPreview(status.urlsFound);
-        } else if (mode === 'static' && testSuite === 'static') {
-          const script = await api.getScript('legacy_static');
-          if (!cancelled) setUrlCountPreview(script?.stepCount ?? null);
-        } else {
-          if (!cancelled) setUrlCountPreview(null);
+    api.listScripts()
+      .then((list) => {
+        setScripts(list);
+        const initial = preselected.filter((id) => list.some((s) => s.id === id));
+        if (initial.length) {
+          setSelected(initial);
+          setLoadPercent(evenSplit(initial));
         }
-      } catch {
-        if (!cancelled) setUrlCountPreview(null);
-      }
-    };
-    loadCount();
-    return () => { cancelled = true; };
-  }, [dataSource, scriptId, mode, testSuite, lastCrawlId]);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load scripts'))
+      .finally(() => setLoadingScripts(false));
+  }, [preselected]);
 
-  const filteredScripts = scripts.filter((s) => s.type === mode);
+  const counts = useMemo(() => {
+    const c: Record<ScriptCategory, number> = { crawled: 0, scripted: 0, navigation: 0 };
+    for (const s of scripts) c[scriptCategory(s)] += 1;
+    return c;
+  }, [scripts]);
+
+  const visibleScripts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return scripts.filter((s) => (
+      (filter === 'all' || scriptCategory(s) === filter)
+      && (!q || s.name.toLowerCase().includes(q) || String(s.scriptNumber ?? '').includes(q))
+    ));
+  }, [scripts, filter, search]);
+
+  const selectedScripts = selected
+    .map((id) => scripts.find((s) => s.id === id))
+    .filter((s): s is TestScript => Boolean(s));
+  const isMulti = selectedScripts.length > 1;
+  const percents = selectedScripts.map((s) => (isMulti ? loadPercent[s.id] ?? 0 : 100));
+  const percentTotal = percents.reduce((a, b) => a + b, 0);
+  const percentValid = !isMulti || (percentTotal === 100 && percents.every((p) => p > 0));
+  const threadShares = execution && selectedScripts.length
+    ? allocateThreads(execution.multiThreading, percents)
+    : [];
+  const effectiveThreads = threadShares.reduce((a, b) => a + b, 0);
+
+  const toggleScript = (id: string) => {
+    const next = selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id];
+    setSelected(next);
+    setLoadPercent(evenSplit(next));
+  };
 
   const handleStart = async () => {
-    if (!config || !execution) return;
+    if (!execution || !selectedScripts.length || !percentValid) return;
     setError('');
     setStarting(true);
     try {
-      const runConfig: AppConfig = {
-        ...config,
-        browserType: execution.browserType,
-        headlessMode: execution.headlessMode,
-        testDurationSeconds: execution.testDurationSeconds > 0 ? execution.testDurationSeconds : null,
-        multiThreading: Math.max(1, execution.multiThreading),
-        thinkTime: Math.max(0, execution.thinkTime),
-      };
-      const run = await api.startRun({
-        mode,
-        useAutoCrawl: mode === 'static' && useAutoCrawl && dataSource === 'legacy',
-        testSuite: mode === 'scripted' ? 'scripted' : testSuite,
-        crawlRunId: dataSource === 'legacy' && testSuite === 'crawled' ? (lastCrawlId ?? undefined) : undefined,
-        scriptId: dataSource === 'script' && scriptId ? scriptId : undefined,
-        config: runConfig,
+      const result = await api.startBatchRun({
+        scripts: selectedScripts.map((s, i) => ({ scriptId: s.id, loadPercent: percents[i] })),
+        execution,
       });
-      navigate(`/app/runs/${run.runId}`);
+      if (result.runs.length === 1) navigate(`/app/runs/${result.runs[0].runId}`);
+      else navigate('/app/runs', { state: { batch: result } });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to start run. Ensure API server (npm run server) and Maven/Java are installed.');
     } finally {
@@ -100,9 +119,19 @@ export default function RunTest() {
     }
   };
 
+  const filterTabs: { key: 'all' | ScriptCategory; label: string; count: number }[] = [
+    { key: 'all', label: 'All', count: scripts.length },
+    { key: 'crawled', label: SCRIPT_CATEGORY_LABELS.crawled, count: counts.crawled },
+    { key: 'scripted', label: SCRIPT_CATEGORY_LABELS.scripted, count: counts.scripted },
+    { key: 'navigation', label: SCRIPT_CATEGORY_LABELS.navigation, count: counts.navigation },
+  ];
+
   return (
     <>
-      <PageHeader title="Run Test" subtitle="Select a saved script or legacy data source, then launch the Java Playwright engine" />
+      <PageHeader
+        title="Run Test"
+        subtitle="Select one or more scripts, configure execution, and launch the Java Playwright engine"
+      />
 
       {error && (
         <div className="mb-4 flex items-start gap-2 rounded-lg bg-red-50 p-4 text-sm text-red-800">
@@ -112,169 +141,157 @@ export default function RunTest() {
 
       <div className="mx-auto max-w-3xl space-y-6">
         <section className="card">
-          <h3 className="mb-4 font-display text-lg font-semibold">1. Select Test Mode</h3>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button onClick={() => { setMode('static'); setScriptId(''); }} className={`rounded-xl border-2 p-4 text-left transition ${mode === 'static' ? 'border-brand-500 bg-brand-50' : 'border-slate-200'}`}>
-              <Zap className="mb-2 h-6 w-6 text-brand-600" />
-              <div className="font-semibold">Static / User Experience</div>
-              <p className="mt-1 text-xs text-slate-500">URL list + Lighthouse + Navigation Timing</p>
-            </button>
-            <button onClick={() => { setMode('scripted'); setScriptId(''); }} className={`rounded-xl border-2 p-4 text-left transition ${mode === 'scripted' ? 'border-brand-500 bg-brand-50' : 'border-slate-200'}`}>
-              <FileText className="mb-2 h-6 w-6 text-brand-600" />
-              <div className="font-semibold">Scripted Flow</div>
-              <p className="mt-1 text-xs text-slate-500">Step-by-step UI scripts</p>
-            </button>
-          </div>
-        </section>
-
-        <section className="card">
-          <h3 className="mb-4 font-display text-lg font-semibold">2. Select Script / Data Source</h3>
-          <div className="mb-4 flex gap-2">
-            <button onClick={() => setDataSource('script')} className={`rounded-lg px-4 py-2 text-sm font-semibold ${dataSource === 'script' ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-              Saved Script
-            </button>
-            <button onClick={() => setDataSource('legacy')} className={`rounded-lg px-4 py-2 text-sm font-semibold ${dataSource === 'legacy' ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
-              Legacy / Crawled
-            </button>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-display text-lg font-semibold">1. Select Script(s)</h3>
+            <span className="text-sm text-slate-500">{selectedScripts.length} selected</span>
           </div>
 
-          {dataSource === 'script' ? (
-            <div>
-              {filteredScripts.length === 0 ? (
-                <div className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
-                  No {mode} scripts saved yet. Create one in{' '}
-                  <Link to="/app/script-studio" className="font-semibold text-brand-600 underline">Script Studio</Link>.
-                </div>
-              ) : (
-                <div>
-                  <label className="label">Choose Script</label>
-                  <select className="input-field" value={scriptId} onChange={(e) => setScriptId(e.target.value)}>
-                    <option value="">— Select a script —</option>
-                    {filteredScripts.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name} ({s.stepCount} {s.type === 'static' ? 'URLs' : 'steps'})</option>
-                    ))}
-                  </select>
-                  {urlCountPreview != null && scriptId && (
-                    <p className="mt-1 text-xs text-slate-500">{urlCountPreview} URL{urlCountPreview === 1 ? '' : 's'} will be tested</p>
-                  )}
-                </div>
-              )}
-              <p className="mt-2 text-xs text-slate-400">
-                <Clapperboard className="inline h-3 w-3" /> Scripts are stored in <code>data/scripts/</code> and used as test case CSV files.
-              </p>
+          <div className="mb-3 flex flex-wrap gap-2">
+            {filterTabs.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setFilter(t.key)}
+                className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${filter === t.key ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+              >
+                {t.label} <span className="opacity-70">({t.count})</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="relative mb-3">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              className="input-field pl-9"
+              placeholder="Search by name or Script ID"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          {loadingScripts ? (
+            <p className="p-4 text-center text-sm text-slate-400">Loading scripts…</p>
+          ) : scripts.length === 0 ? (
+            <div className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
+              No scripts saved yet. Create one from{' '}
+              <Link to="/app/scripts" className="font-semibold text-brand-600 underline">Scripts</Link>
+              {' '}or the{' '}
+              <Link to="/app/crawler" className="font-semibold text-brand-600 underline">Website Crawler</Link>.
             </div>
-          ) : mode === 'static' ? (
-            <div className="space-y-3">
-              {!lastCrawlId && testSuite === 'crawled' && (
-                <div className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
-                  No crawled URL set. Run the <strong>Website Crawler</strong> first, or enable Auto Crawl below.
-                </div>
-              )}
-              <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 ${testSuite === 'crawled' ? 'border-brand-500 bg-brand-50' : 'border-slate-200'}`}>
-                <input type="radio" name="suite" checked={testSuite === 'crawled'} onChange={() => setTestSuite('crawled')} className="mt-1" />
-                <div>
-                  <div className="font-medium">Crawled URLs {lastCrawlId && <span className="font-mono text-brand-600">(Run {lastCrawlId})</span>}</div>
-                  {urlCountPreview != null && lastCrawlId && (
-                    <p className="mt-1 text-xs text-slate-500">{urlCountPreview} URL{urlCountPreview === 1 ? '' : 's'} will be tested</p>
-                  )}
-                </div>
-              </label>
-              <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 ${testSuite === 'static' ? 'border-brand-500 bg-brand-50' : 'border-slate-200'}`}>
-                <input type="radio" name="suite" checked={testSuite === 'static'} onChange={() => setTestSuite('static')} className="mt-1" />
-                <div><div className="font-medium">Static Test Case File</div>
-                  {urlCountPreview != null && testSuite === 'static' && (
-                    <p className="mt-1 text-xs text-slate-500">{urlCountPreview} URL{urlCountPreview === 1 ? '' : 's'} will be tested</p>
-                  )}
-                </div>
-              </label>
-              <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 ${useAutoCrawl ? 'border-amber-300 bg-amber-50' : 'border-slate-200'}`}>
-                <input type="checkbox" checked={useAutoCrawl} onChange={(e) => setUseAutoCrawl(e.target.checked)} className="mt-1" />
-                <div>
-                  <div className="flex items-center gap-2 font-medium"><Globe className="h-4 w-4" /> Auto Crawl before run (Java engine)</div>
-                  <p className="text-xs text-slate-500">Uses CrawlerURL from Configuration</p>
-                </div>
-              </label>
-            </div>
+          ) : visibleScripts.length === 0 ? (
+            <p className="p-4 text-center text-sm text-slate-400">No scripts match this filter.</p>
           ) : (
-            <p className="text-sm text-slate-500">Uses the default <code>ScriptedTestCasesFilePath.csv</code> from the project root.</p>
+            <ul className="max-h-80 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200">
+              {visibleScripts.map((s) => {
+                const cat = scriptCategory(s);
+                const Icon = CATEGORY_ICONS[cat];
+                const checked = selected.includes(s.id);
+                return (
+                  <li key={s.id}>
+                    <label className={`flex cursor-pointer items-center gap-3 px-4 py-3 ${checked ? 'bg-brand-50' : 'hover:bg-slate-50'}`}>
+                      <input type="checkbox" className="h-4 w-4" checked={checked} onChange={() => toggleScript(s.id)} />
+                      <Icon className="h-4 w-4 shrink-0 text-slate-400" />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-medium" title={s.name}>
+                          {s.scriptNumber != null && <span className="mr-1 font-mono text-xs text-slate-400">#{s.scriptNumber}</span>}
+                          {s.name}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {s.stepCount} {s.type === 'static' ? 'URLs' : 'steps'}
+                          {s.testDataRows ? ` · ${s.testDataRows} test data row${s.testDataRows === 1 ? '' : 's'}` : ''}
+                        </div>
+                      </div>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${CATEGORY_BADGE[cat]}`}>
+                        {SCRIPT_CATEGORY_LABELS[cat]}
+                      </span>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </section>
 
         <section className="card">
-          <h3 className="mb-4 font-display text-lg font-semibold">3. Execution Settings</h3>
-          {execution && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="label" htmlFor="browserType">Browser Type</label>
-                <select
-                  id="browserType"
-                  className="input-field"
-                  value={execution.browserType}
-                  onChange={(e) => setExecution({ ...execution, browserType: e.target.value as BrowserType })}
-                >
-                  <option value="chrome">Chrome (Chromium)</option>
-                  <option value="firefox">Firefox</option>
-                  <option value="webkit">WebKit (Safari)</option>
-                </select>
-              </div>
-              <div>
-                <label className="label" htmlFor="multiThreading">Multi-threading</label>
-                <input
-                  id="multiThreading"
-                  type="number"
-                  min={1}
-                  className="input-field"
-                  value={execution.multiThreading}
-                  onChange={(e) => setExecution({ ...execution, multiThreading: Number(e.target.value) || 1 })}
-                />
-                <p className="mt-1 text-xs text-slate-400">Parallel browser sessions (static: untested URLs; scripted: same flow per thread)</p>
-              </div>
-              <div>
-                <label className="label" htmlFor="testDuration">Test Duration (seconds)</label>
-                <input
-                  id="testDuration"
-                  type="number"
-                  min={0}
-                  className="input-field"
-                  value={execution.testDurationSeconds}
-                  onChange={(e) => setExecution({ ...execution, testDurationSeconds: Number(e.target.value) || 0 })}
-                />
-                <p className="mt-1 text-xs text-slate-400">0 = run once through all requests; &gt;0 = loop until time expires</p>
-              </div>
-              <div>
-                <label className="label" htmlFor="thinkTime">Think-Time (ms)</label>
-                <input
-                  id="thinkTime"
-                  type="number"
-                  min={0}
-                  className="input-field"
-                  value={execution.thinkTime}
-                  onChange={(e) => setExecution({ ...execution, thinkTime: Number(e.target.value) || 0 })}
-                />
-                <p className="mt-1 text-xs text-slate-400">Wait between each request / step</p>
-              </div>
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 p-4 sm:col-span-2">
-                <input
-                  type="checkbox"
-                  checked={execution.headlessMode}
-                  onChange={(e) => setExecution({ ...execution, headlessMode: e.target.checked })}
-                  className="h-4 w-4"
-                />
-                <div>
-                  <div className="font-medium">Headless Mode</div>
-                  <p className="text-xs text-slate-500">Run browsers without a visible window</p>
-                </div>
-              </label>
-            </div>
-          )}
+          <h3 className="mb-4 font-display text-lg font-semibold">2. Execution Settings</h3>
+          {execution && <ExecutionSettingsForm value={execution} onChange={setExecution} />}
         </section>
+
+        {isMulti && execution && (
+          <section className="card">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="font-display text-lg font-semibold">3. Load Distribution</h3>
+              <button type="button" className="btn-secondary text-sm" onClick={() => setLoadPercent(evenSplit(selected))}>
+                <Scale className="h-4 w-4" /> Distribute evenly
+              </button>
+            </div>
+            <p className="mb-3 text-xs text-slate-500">
+              Load % sets each script's share of the {execution.multiThreading} total thread{execution.multiThreading === 1 ? '' : 's'}.
+              Scripts run concurrently, each in its own engine.
+            </p>
+            <div className="overflow-hidden rounded-lg border border-slate-200">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs uppercase text-slate-400">
+                  <tr>
+                    <th className="px-4 py-2">Script</th>
+                    <th className="w-28 px-4 py-2">Load %</th>
+                    <th className="w-20 px-4 py-2 text-right">Threads</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedScripts.map((s, i) => (
+                    <tr key={s.id} className="border-t border-slate-100">
+                      <td className="px-4 py-2">
+                        <div className="truncate font-medium" title={s.name}>{s.name}</div>
+                        <div className="text-xs text-slate-500">{SCRIPT_CATEGORY_LABELS[scriptCategory(s)]}</div>
+                      </td>
+                      <td className="px-4 py-2">
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          className="input-field py-1"
+                          aria-label={`Load % for ${s.name}`}
+                          value={loadPercent[s.id] ?? 0}
+                          onChange={(e) => setLoadPercent({ ...loadPercent, [s.id]: Math.max(0, Math.min(100, Math.floor(Number(e.target.value) || 0))) })}
+                        />
+                      </td>
+                      <td className="px-4 py-2 text-right font-mono">{threadShares[i]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="border-t border-slate-200 bg-slate-50 text-sm font-semibold">
+                  <tr>
+                    <td className="px-4 py-2">Total</td>
+                    <td className={`px-4 py-2 ${percentTotal === 100 ? 'text-emerald-700' : 'text-red-600'}`}>{percentTotal}%</td>
+                    <td className="px-4 py-2 text-right font-mono">{effectiveThreads}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            {percentTotal !== 100 && (
+              <p className="mt-2 text-xs text-red-600">Load % must add up to 100.</p>
+            )}
+            {percents.some((p) => p <= 0) && (
+              <p className="mt-2 text-xs text-red-600">Every selected script needs a Load % above 0.</p>
+            )}
+            {effectiveThreads > execution.multiThreading && (
+              <p className="mt-2 text-xs text-amber-700">
+                Each script needs at least 1 thread, so {effectiveThreads} threads will run instead of {execution.multiThreading}.
+              </p>
+            )}
+          </section>
+        )}
 
         <button
           onClick={handleStart}
-          disabled={starting || !config || !execution || (dataSource === 'script' && !scriptId)}
+          disabled={starting || !execution || !selectedScripts.length || !percentValid}
           className="btn-primary w-full justify-center py-3 text-base"
         >
-          <Play className="h-5 w-5" /> {starting ? 'Starting Java engine…' : 'Start Test Run'}
+          <Play className="h-5 w-5" />
+          {starting
+            ? 'Starting Java engine…'
+            : isMulti ? `Start ${selectedScripts.length} Scripts` : 'Start Test Run'}
         </button>
       </div>
     </>

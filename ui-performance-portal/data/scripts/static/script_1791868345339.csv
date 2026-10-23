@@ -1,0 +1,9 @@
+Transaction Name,Path Page URL,Element Identifier,Element Selector
+Start_opensource_demo,https://opensource-demo.orangehrmlive.com/,CSS,body
+Open_Login,https://opensource-demo.orangehrmlive.com/web/index.php/auth/login,CSS,"input[name=""username""]"
+Open_Dashboard,https://opensource-demo.orangehrmlive.com/web/index.php/dashboard/index,XPath,//span[normalize-space()='Admin']
+Open_Admin,https://opensource-demo.orangehrmlive.com/web/index.php/admin/viewSystemUsers,XPath,//a[normalize-space()='PIM']
+Open_Employee,https://opensource-demo.orangehrmlive.com/web/index.php/pim/viewEmployeeList,XPath,//span[normalize-space()='Leave']
+Open_Leave,https://opensource-demo.orangehrmlive.com/web/index.php/leave/viewLeaveList,XPath,//span[normalize-space()='Time']
+Open_Employee,https://opensource-demo.orangehrmlive.com/web/index.php/time/viewEmployeeTimesheet,XPath,//span[normalize-space()='My Info']
+Open_Employee,https://opensource-demo.orangehrmlive.com/web/index.php/pim/viewPersonalDetails/empNumber/7,CSS,"input[name=""middleName""]"

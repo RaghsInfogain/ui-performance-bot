@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+**/target
+**/*.tsbuildinfo
+Results
+screenshots
+.npm-cache
+.git
+.github
+.env
+**/.env
+_bmad*
+.claude
+**/.DS_Store

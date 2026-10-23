@@ -18,13 +18,13 @@ export function WaterfallChart({ steps, height = 220, estimated }: Props) {
   }));
 
   if (!data.length) {
-    return <p style={{ fontSize: 13, color: '#5B5D63' }}>No navigation timing data available for this page.</p>;
+    return <p style={{ fontSize: 13, color: '#475569' }}>No navigation timing data available for this page.</p>;
   }
 
   return (
     <>
       {estimated && (
-        <p style={{ fontSize: 12, color: '#854F0B', marginBottom: 8 }}>
+        <p style={{ fontSize: 12, color: '#B45309', marginBottom: 8 }}>
           Estimated from CSV — re-run tests to capture full Navigation Timing milestones (NavTiming*.json).
         </p>
       )}
@@ -32,7 +32,7 @@ export function WaterfallChart({ steps, height = 220, estimated }: Props) {
         <BarChart data={data} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
           <XAxis
             type="number"
-            tick={{ fontSize: 11, fill: '#5B5D63' }}
+            tick={{ fontSize: 11, fill: '#475569' }}
             axisLine={false}
             tickLine={false}
             tickFormatter={(v) => `${v}ms`}
@@ -41,7 +41,7 @@ export function WaterfallChart({ steps, height = 220, estimated }: Props) {
             type="category"
             dataKey="name"
             width={96}
-            tick={{ fontSize: 11.5, fill: '#1B1C1E' }}
+            tick={{ fontSize: 11.5, fill: '#0F172A' }}
             axisLine={false}
             tickLine={false}
           />
@@ -52,16 +52,16 @@ export function WaterfallChart({ steps, height = 220, estimated }: Props) {
               const p = payload[0]?.payload;
               if (!p) return null;
               return (
-                <div style={{ background: '#fff', border: '1px solid #E2E0D8', padding: '10px 12px', fontSize: 12, maxWidth: 280 }}>
+                <div style={{ background: '#fff', border: '1px solid #E2E8F0', padding: '10px 12px', fontSize: 12, maxWidth: 280 }}>
                   <div style={{ fontWeight: 600, marginBottom: 4 }}>{p.name}: {p.duration}ms</div>
-                  {p.formula && <div style={{ fontFamily: 'monospace', color: '#0C447C', marginBottom: 4 }}>{p.formula}</div>}
-                  {p.purpose && <div style={{ color: '#5B5D63' }}>{p.purpose}</div>}
+                  {p.formula && <div style={{ fontFamily: 'monospace', color: '#4F46E5', marginBottom: 4 }}>{p.formula}</div>}
+                  {p.purpose && <div style={{ color: '#475569' }}>{p.purpose}</div>}
                 </div>
               );
             }}
           />
-          <Bar dataKey="offset" stackId="wf" fill="rgba(0,0,0,0)" />
-          <Bar dataKey="duration" stackId="wf" radius={[0, 3, 3, 0]}>
+          <Bar dataKey="offset" stackId="wf" fill="rgba(0,0,0,0)" isAnimationActive={false} />
+          <Bar dataKey="duration" stackId="wf" radius={[0, 3, 3, 0]} isAnimationActive={false}>
             {data.map((_, i) => (
               <Cell key={i} fill={WATERFALL_COLORS[i % WATERFALL_COLORS.length]} />
             ))}

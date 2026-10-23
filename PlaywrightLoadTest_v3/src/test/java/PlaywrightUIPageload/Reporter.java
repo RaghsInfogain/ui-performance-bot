@@ -11,10 +11,12 @@ public class Reporter {
     static String resultDirectory;
     static String runId = RunIdManager.getRunId();
 
+    static String csvDirectory;
+
     // Initialize the reporter with the result directory
     public static void initialize(String resultDirectory) {
         try {
-            // Construct the result directory path
+            csvDirectory = resultDirectory;
             Reporter.resultDirectory = resultDirectory + File.separator + "Scripted_Flow_" + "Run_ID" + runId;
 
             // Create the directory if it doesn't exist
@@ -52,16 +54,36 @@ public class Reporter {
             System.out.println("Transaction: " + transactionName + ", Test Status: " + testStatus);
 
             // Format the data and write it to the CSV
+            // Columns: Run_ID,Timestamp,Transaction,HostName,...
             String formattedString = String.format("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-                    "Run_ID" + runId, timestamp, hostname, transactionName, testStepName, request, elementIdentifier, loadTime,
+                    "Run_ID" + runId, timestamp, transactionName, hostname, testStepName, request, elementIdentifier, loadTime,
                     fullPageLoadTime, testStatus, failureReason, pageLoadTimeCalculated, networkTime, dnsLookupTime, connectionTime,
                     serverProcessingTime, responseTime, browserTime, domInteractionTime, domCompleteTime, fcp, lcp, tbt, cls, speedIndex, performanceScore);
 
             // Write the formatted data to the CSV file
             writer.write(formattedString);
-
-            // Flush the writer to ensure data is written immediately
             writer.flush();
+            long loadMs = 0;
+            try {
+                if (loadTime != null && !loadTime.isEmpty()) loadMs = Long.parseLong(loadTime);
+            } catch (NumberFormatException ignored) {
+            }
+            double score = 0;
+            try {
+                if (performanceScore != null && !performanceScore.isEmpty()) score = Double.parseDouble(performanceScore);
+            } catch (NumberFormatException ignored) {
+            }
+            String pageUrl = (request != null && !request.isEmpty()) ? request : (testStepName != null ? testStepName : transactionName);
+            RunProgressRecorder.record(
+                    csvDirectory != null ? csvDirectory : resultDirectory,
+                    pageUrl,
+                    transactionName,
+                    loadMs,
+                    loadTime,
+                    testStatus,
+                    failureReason,
+                    score
+            );
 
         } catch (IOException e) {
             e.printStackTrace();

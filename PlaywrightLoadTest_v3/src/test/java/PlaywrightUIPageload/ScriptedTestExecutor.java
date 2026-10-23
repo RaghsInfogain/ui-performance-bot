@@ -67,7 +67,18 @@ public class ScriptedTestExecutor {
             final Map<String, List<Map<String, String>>> groupedTestCases = groupTestCasesByName(testCasesList);
             final List<String> flowNames = new ArrayList<>(groupedTestCases.keySet());
             final ExecutionGovernor governor = ExecutionGovernor.create(resultDirectory, durationSeconds);
-            final ParallelWorkQueue<String> flowQueue = new ParallelWorkQueue<>(flowNames, durationMode);
+            // Test data: without a duration every data row runs once per flow; with a duration
+            // flows loop and each iteration takes a row according to the data mode.
+            final TestDataProvider testData = TestDataProvider.fromProperties(properties);
+            final List<FlowRun> work = new ArrayList<>();
+            if (testData != null && !durationMode) {
+                for (TestDataProvider.DataRow row : testData.allRows()) {
+                    for (String flow : flowNames) work.add(new FlowRun(flow, row));
+                }
+            } else {
+                for (String flow : flowNames) work.add(new FlowRun(flow, null));
+            }
+            final ParallelWorkQueue<FlowRun> flowQueue = new ParallelWorkQueue<>(work, durationMode);
 
             System.out.println("Scripted multi-threaded execution — " + numThreads + " parallel browsers, "
                     + flowNames.size() + " flow(s), duration: "
@@ -98,14 +109,24 @@ public class ScriptedTestExecutor {
                         browsersReady.countDown();
                         try {
                             while (governor.shouldAcceptNewWork()) {
-                                String testCaseName = flowQueue.claimNext();
-                                if (testCaseName == null) {
+                                FlowRun next = flowQueue.claimNext();
+                                if (next == null) {
                                     break;
                                 }
-                                System.out.println("[Worker " + workerId + "] Running scripted flow: " + testCaseName);
+                                String testCaseName = next.flow;
+                                TestDataProvider.DataRow dataRow = next.dataRow;
+                                if (dataRow == null && testData != null) {
+                                    dataRow = testData.next();
+                                    if (dataRow == null) {
+                                        System.out.println("[Worker " + workerId + "] All test data rows used (unique mode) — stopping");
+                                        break;
+                                    }
+                                }
+                                System.out.println("[Worker " + workerId + "] Running scripted flow: " + testCaseName
+                                        + (dataRow != null ? " with data row " + dataRow.number + " " + dataRow.values : ""));
                                 governor.workStarted();
                                 try {
-                                    executeTestCase(browser, testCaseName, groupedTestCases.get(testCaseName), config);
+                                    executeTestCase(browser, testCaseName, groupedTestCases.get(testCaseName), config, dataRow);
                                 } finally {
                                     governor.workFinished();
                                 }
@@ -167,7 +188,7 @@ public class ScriptedTestExecutor {
         Reporter.initialize(resultDirectory);
         Map<String, List<Map<String, String>>> groupedTestCases = groupTestCasesByName(testCasesList);
         for (String testCaseName : groupedTestCases.keySet()) {
-            executeTestCase(browser, testCaseName, groupedTestCases.get(testCaseName), null);
+            executeTestCase(browser, testCaseName, groupedTestCases.get(testCaseName), null, null);
         }
         Reporter.finalizeReport();
     }
@@ -182,7 +203,19 @@ public class ScriptedTestExecutor {
         return groupedTestCases;
     }
 
-    private static void executeTestCase(Browser browser, String testCaseName, List<Map<String, String>> testCaseSteps, Map<String, String> config) {
+    /** One unit of work: a flow, optionally bound to a test data row. */
+    private static final class FlowRun {
+        final String flow;
+        final TestDataProvider.DataRow dataRow;
+
+        FlowRun(String flow, TestDataProvider.DataRow dataRow) {
+            this.flow = flow;
+            this.dataRow = dataRow;
+        }
+    }
+
+    private static void executeTestCase(Browser browser, String testCaseName, List<Map<String, String>> testCaseSteps,
+                                        Map<String, String> config, TestDataProvider.DataRow dataRow) {
     	
     	
     	System.out.println("Executing test case: " + testCaseName);
@@ -193,7 +226,7 @@ public class ScriptedTestExecutor {
             Frame frame = null;
 
             for (Map<String, String> step : testCaseSteps) {
-                frame = executeTestStep(page, frame, step);
+                frame = executeTestStep(page, frame, dataRow != null ? dataRow.apply(step) : step);
                 if (config != null) {
                     ConfigHelper.sleepThinkTime(config);
                 }
@@ -263,6 +296,21 @@ public class ScriptedTestExecutor {
             System.err.println("Selector is required for action: " + action);
             return frame;
         }
+
+        // A UI action with a Request (e.g. "Post:/api/v2/pim/employees") is a transaction:
+        // listen for that server response so the timing includes the round-trip.
+        final String[] expected = action.equals("Navigate") ? null : parseExpectedRequest(request);
+        final long[] responseAt = {0};
+        java.util.function.Consumer<com.microsoft.playwright.Response> responseListener = null;
+        if (expected != null) {
+            responseListener = resp -> {
+                if (responseAt[0] == 0 && responseMatches(resp, expected[0], expected[1])) {
+                    responseAt[0] = System.currentTimeMillis();
+                }
+            };
+            page.onResponse(responseListener);
+        }
+        long navStartBefore = currentNavigationStart(page);
 
         try {
             if (frameSelector != null && !frameSelector.isEmpty()) {
@@ -341,7 +389,18 @@ public class ScriptedTestExecutor {
                     frame = switchToFrame(page, selector);
                     break;
                 case "Navigate":
-                    Action.navigate(page, textToSet);
+                    String navigateUrl = textToSet;
+                    if (navigateUrl == null || navigateUrl.trim().isEmpty()) {
+                        if (request != null && request.toLowerCase().startsWith("get:")) {
+                            navigateUrl = request.substring(4).trim();
+                        } else if (request != null && (request.startsWith("http://") || request.startsWith("https://"))) {
+                            navigateUrl = request.trim();
+                        }
+                    }
+                    if (navigateUrl == null || navigateUrl.trim().isEmpty()) {
+                        throw new Exception("Navigate missing URL (Parameter / Request)");
+                    }
+                    Action.navigate(page, navigateUrl);
                     break;
                 case "SwitchWindow":
                     switchToNewWindow(page);
@@ -369,14 +428,35 @@ public class ScriptedTestExecutor {
                     failureReason = "Unsupported action: " + action;
                     throw new Exception(failureReason);
             }
+                // Wait for load-confirming element after every action (skip blank/NA)
+                String waitTarget = elementIdentifier;
+                if (waitTarget == null || waitTarget.trim().isEmpty()
+                        || "NA".equalsIgnoreCase(waitTarget.trim())
+                        || "N/A".equalsIgnoreCase(waitTarget.trim())) {
+                    waitTarget = "body";
+                }
                 if (frame != null) {
-                    Action.waitUntilElementIsVisible(frame, elementIdentifier, timeout);
+                    Action.waitUntilElementIsVisible(frame, waitTarget, Math.min(Math.max(timeout, 5000), 30000));
                 } else {
-                    Action.waitUntilElementIsVisible(page, elementIdentifier, timeout);
+                    Action.waitUntilElementIsVisible(page, waitTarget, Math.min(Math.max(timeout, 5000), 30000));
                 }
             // Calculate page load time using JavaScript           
-            if (action.equals("Navigate") || action.equals("CalculateFullPageLoadTime")) {
-            	page.waitForLoadState(LoadState.LOAD);
+            if (expected != null) {
+                long deadline = System.currentTimeMillis() + Math.min(Math.max(timeout, 5000), 30000);
+                while (responseAt[0] == 0 && System.currentTimeMillis() < deadline) {
+                    page.waitForTimeout(100);
+                }
+                if (responseAt[0] == 0) {
+                    System.out.println("Expected server request not observed: " + request);
+                }
+            }
+            // A UI action that loaded a new document (e.g. "Click Login" -> dashboard) also
+            // reports Navigation Timing for that page
+            boolean loadsPage = !action.equals("Navigate") && navStartBefore > 0
+                    && currentNavigationStart(page) != navStartBefore;
+            if (action.equals("Navigate") || action.equals("CalculateFullPageLoadTime") || loadsPage) {
+            	page.waitForLoadState(LoadState.DOMCONTENTLOADED,
+                        new Page.WaitForLoadStateOptions().setTimeout(Math.min(timeout, 90000)));
             	 Object pageLoadTimeObject = page.evaluate("window.performance.timing.loadEventEnd - window.performance.timing.navigationStart");
             	 String timingJson = (String) page.evaluate("() => { const timing = window.performance.timing; return JSON.stringify({ navigationStart: timing.navigationStart, loadEventEnd: timing.loadEventEnd, connectEnd: timing.connectEnd, domainLookupStart: timing.domainLookupStart, domainLookupEnd: timing.domainLookupEnd, connectStart: timing.connectStart, responseEnd: timing.responseEnd, responseStart: timing.responseStart, requestStart: timing.requestStart, domLoading: timing.domLoading, domInteractive: timing.domInteractive, domComplete: timing.domComplete }); }");
                  JSONObject timing = new JSONObject(timingJson);
@@ -521,12 +601,20 @@ public class ScriptedTestExecutor {
             }
             
             
+            if (responseListener != null) {
+                page.offResponse(responseListener);
+                responseListener = null;
+            }
             long endTime = System.currentTimeMillis();
             loadTime = endTime - startTime;
         
             System.out.println("Action '" + action + "' completed.");
 
         } catch (Exception e) {
+            if (responseListener != null) {
+                try { page.offResponse(responseListener); } catch (Exception ignored) { }
+                responseListener = null;
+            }
             e.printStackTrace();
             loadTime = -1;
             try {
@@ -556,11 +644,14 @@ public class ScriptedTestExecutor {
 
         String hostname = InetAddress.getLocalHost().getHostName();
         String runId = RunIdManager.getRunId();
+        String txnLabel = (transactionName != null && !transactionName.trim().isEmpty())
+                ? transactionName.trim()
+                : (testStepName != null && !testStepName.isEmpty() ? testStepName : action);
         Reporter.logResult(
             runId,
             LocalDateTime.now().format(timestampFormatter),
-            transactionName,
             hostname,
+            txnLabel,
             testStepName,
             request,
             elementIdentifier,
@@ -596,6 +687,48 @@ public class ScriptedTestExecutor {
 		
     }
 
+    /** "Post:/api/v2/x" -> {"POST", "/api/v2/x"}; null when the Request column holds no server call. */
+    private static String[] parseExpectedRequest(String request) {
+        if (request == null) return null;
+        String r = request.trim();
+        int colon = r.indexOf(':');
+        if (colon <= 0 || colon + 1 >= r.length()) return null;
+        String method = r.substring(0, colon).trim().toUpperCase();
+        String target = r.substring(colon + 1).trim();
+        if (!method.matches("GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS")) return null;
+        if (target.startsWith("http://") || target.startsWith("https://")) {
+            try { target = new java.net.URL(target).getPath(); } catch (Exception e) { return null; }
+        }
+        int q = target.indexOf('?');
+        if (q >= 0) target = target.substring(0, q);
+        if (!target.startsWith("/")) return null;
+        return new String[] { method, normalizeIds(target) };
+    }
+
+    /** Numeric path segments (record ids) vary between runs, so compare them as placeholders. */
+    private static String normalizeIds(String path) {
+        return path.replaceAll("/\\d+(?=/|$)", "/{id}");
+    }
+
+    private static boolean responseMatches(com.microsoft.playwright.Response resp, String method, String path) {
+        try {
+            if (!resp.request().method().equalsIgnoreCase(method)) return false;
+            return normalizeIds(new java.net.URL(resp.url()).getPath()).equals(path);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** performance.timing.navigationStart of the current document; changes when a new page loads. */
+    private static long currentNavigationStart(Page page) {
+        try {
+            Object v = page.evaluate("() => window.performance.timing.navigationStart");
+            return v instanceof Number ? ((Number) v).longValue() : 0;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     public static Properties loadProperties(String filePath) throws IOException {
         Properties properties = new Properties();
         File file = new File(filePath);
@@ -613,7 +746,7 @@ public class ScriptedTestExecutor {
 	private static Frame switchToFrame(Page page, String frameSelector) {
         try {
             // Locate the frame element first
-            Locator frameLocator = page.locator(frameSelector);
+            Locator frameLocator = page.locator(Action.playwrightSelector(frameSelector));
 
             // Wait for the frame to be attached to the DOM
             frameLocator.waitFor(new Locator.WaitForOptions()
@@ -677,9 +810,8 @@ public class ScriptedTestExecutor {
     private static String getTextFromPage(Page page, String selector) {
         try {
             // Wait for the selector to be visible
-            page.waitForSelector(selector);
-            // Get the text content of the element
-            return page.textContent(selector);
+            page.waitForSelector(Action.playwrightSelector(selector));
+            return page.textContent(Action.playwrightSelector(selector));
         } catch (Exception e) {
             System.err.println("Failed to get text from page. Selector: " + selector + ". Error: " + e.getMessage());
             return "";

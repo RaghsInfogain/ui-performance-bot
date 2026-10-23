@@ -1,0 +1,51 @@
+# CI: proves every part of the app still builds. Runs on GitHub-hosted runners for
+# pull requests into main, and is reused by deploy.yml before each deployment.
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui-performance-portal/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Portal — install, type-check and build
+        working-directory: ui-performance-portal
+        run: |
+          npm ci
+          npm run build          # tsc -b && vite build
+
+      - name: API — syntax check
+        working-directory: ui-performance-portal
+        run: for f in server/*.js server/db/*.js; do node --check "$f"; done
+
+      - name: Report analyzer — syntax check
+        run: python -m py_compile ui-performance-portal/server/*.py
+
+      - name: Test engine — compile
+        working-directory: PlaywrightLoadTest_v3
+        run: mvn -B -q test-compile

@@ -1,0 +1,170 @@
+Transaction Name,Path Page URL,Element Identifier,Element Selector
+Home_Page,https://workforceexperience.hp.com/,XPath,//h1[normalize-space()='Shift IT from infrastructure to impact']
+Platform_Overview,https://workforceexperience.hp.com/platform-overview/,XPath,"//h1[normalize-space()=""Fixing problems before they're your problem""]"
+Pricing,https://workforceexperience.hp.com/pricing/,XPath,//h1[normalize-space()='Pricing Plans']
+Wxp_Collaboration,https://workforceexperience.hp.com/wxp-collaboration/,XPath,//h1[normalize-space()='WXP Collaboration']
+Retail,https://workforceexperience.hp.com/retail/,XPath,//h1[normalize-space()='Powering Intelligent Retail']
+Wxp_Print_Management,https://workforceexperience.hp.com/wxp-print-management/,XPath,//h1[normalize-space()='WXP Print Management']
+Partners,https://workforceexperience.hp.com/partners/,XPath,//h1[normalize-space()='Partner with HP']
+Blog,https://workforceexperience.hp.com/blog,XPath,"//h1[normalize-space()='Product Release Notes, Summer ’26 Roundup']"
+About_Us,https://workforceexperience.hp.com/about-us/,XPath,"//h2[contains(normalize-space(),'Delivering a more intelligent, productiv')]"
+Wxp_Case_Studies,https://workforceexperience.hp.com/wxp-case-studies/,XPath,//h1[normalize-space()='WXP Case Studies']
+Demos,https://workforceexperience.hp.com/demos/,XPath,//h1[normalize-space()='HP Workforce Experience Platform Demos']
+What_Is_Digital_Employee_Experience,https://workforceexperience.hp.com/what-is-digital-employee-experience/,XPath,//h1[normalize-space()='What Is Digital Employee Experience (DEX)?']
+Global_Memory_Shortage,https://workforceexperience.hp.com/global-memory-shortage/,XPath,//h1[normalize-space()='Navigating the Global Memory Shortage']
+Dex_Roi_Calculator,https://workforceexperience.hp.com/dex-roi-calculator/,XPath,"//h2[contains(normalize-space(),'Calculate the value of an optimized digi')]"
+Login,https://workforceexperience.hp.com/login,XPath,//body
+Product_Release_Notes_Summer_26_Roundup,https://workforceexperience.hp.com/blog/product-release-notes-summer-26-roundup/,XPath,"//h1[normalize-space()='Product Release Notes, Summer ’26 Roundup']"
+Manage_Pcs_Printers_And_Collaboration_Without_Costly_Tool_Sp,https://workforceexperience.hp.com/blog/manage-pcs-printers-and-collaboration-without-costly-tool-sprawl/,XPath,"//h1[contains(normalize-space(),'Manage PCs, Printers, and Collaboration')]"
+Hp_Wins_Crn_Award_2025,https://workforceexperience.hp.com/blog/hp-wins-crn-award-2025,XPath,"//h1[contains(normalize-space(),'HP WXP Wins 2025 CRN Tech Innovators Awa')]"
+Wxp_Begins_Global_Rollout,https://workforceexperience.hp.com/blog/wxp-begins-global-rollout/,XPath,//h1[normalize-space()='HP Workforce Experience Platform Begins Global Rollout']
+Hp_Vyopta,https://workforceexperience.hp.com/blog/hp-vyopta/,XPath,"//h1[contains(normalize-space(),'HP Strengthens Workforce Experience Plat')]"
+Device_Data_Tech_Investments,https://workforceexperience.hp.com/blog/device-data-tech-investments/,XPath,"//h1[contains(normalize-space(),'Leveraging Powerful Device Data to Make')]"
+It_Asset_Management,https://workforceexperience.hp.com/blog/it-asset-management/,XPath,//h1[normalize-space()='What is ITAM? A Guide to Successful IT Asset Management']
+Software,https://workforceexperience.hp.com/software,XPath,//body
+Requirements,https://workforceexperience.hp.com/requirements,XPath,//body
+Learning,https://workforceexperience.hp.com/learning/,XPath,//h1[normalize-space()='Learn from IT Experts']
+Fleet_Management,https://workforceexperience.hp.com/fleet-management/,XPath,//h1[normalize-space()='AI-Powered Fleet Management']
+Wxp_Collaboration_Technology_Insights,https://workforceexperience.hp.com/wxp-collaboration-technology-insights/,XPath,//h1[normalize-space()='WXP Collaboration Technology Insights']
+Wxp_Collaboration_Space_Insights,https://workforceexperience.hp.com/wxp-collaboration-space-insights/,XPath,//h1[normalize-space()='WXP Collaboration Space Insights']
+Hp_Vanalytics,https://workforceexperience.hp.com/hp-vanalytics/,XPath,//h1[normalize-space()='WXP Collaboration vAnalytics']
+Wxp_Collaboration_Government,https://workforceexperience.hp.com/wxp-collaboration-government/,XPath,//h1[normalize-space()='Mission-Critical Collaboration']
+Wxpcollabroicalculator,https://workforceexperience.hp.com/wxpcollabroicalculator,XPath,//h2[normalize-space()='Determine the value of your collaboration workspaces.']
+Blog_2,https://workforceexperience.hp.com/blog/?search=Collaboration&page=1,XPath,"//h1[normalize-space()='Product Release Notes, Summer ’26 Roundup']"
+Employee_Engagement,https://workforceexperience.hp.com/employee-engagement,XPath,//h1[normalize-space()='Employee Engagement']
+Simplify_Printer_Management_With_Wxp,https://workforceexperience.hp.com/blog/simplify-printer-management-with-wxp/,XPath,//h1[normalize-space()='Simplify Printer Management with WXP']
+Product_Release_Notes_Winter_25_Roundup,https://workforceexperience.hp.com/blog/product-release-notes-winter-25-roundup/,XPath,"//h1[normalize-space()='Product Release Notes, Winter ’25 Roundup']"
+Security_Print_Fleet,https://workforceexperience.hp.com/blog/security-print-fleet/,XPath,//h1[normalize-space()='Enhancing Security Across the Print Fleet Lifecycle']
+Secure_Printers_Prevent_Malware,https://workforceexperience.hp.com/blog/secure-printers-prevent-malware/,XPath,"//h1[contains(normalize-space(),'How WXP Helps to Secure Your Printers an')]"
+Contact_Us,https://workforceexperience.hp.com/contact-us/,XPath,//h2[normalize-space()='Contact us']
+Product,https://workforceexperience.hp.com/product/,XPath,//h1[normalize-space()='Product']
+News,https://workforceexperience.hp.com/news/,XPath,//h1[normalize-space()='News']
+Insights,https://workforceexperience.hp.com/insights/,XPath,//h1[normalize-space()='Insights']
+Product_Podcast_Highlights,https://workforceexperience.hp.com/blog/product-podcast-highlights/,XPath,//h1[normalize-space()='3 Takeaways From The Product Podcast With Faisal Masud']
+Economics_Physical_Retail,https://workforceexperience.hp.com/blog/economics-physical-retail/,XPath,//h1[normalize-space()='The Irresistible Economics of Physical Retail']
+Stop_Paying_For_Underused_Software,https://workforceexperience.hp.com/blog/stop-paying-for-underused-software/,XPath,//h1[normalize-space()='Stop Paying for Underused Software']
+Jurassic_It,https://workforceexperience.hp.com/blog/jurassic-it/,XPath,//h1[normalize-space()='Jurassic IT: How DEX Prevents Enterprise IT Extinction']
+Self_Checkout_Smart_Pos_Peripherals,https://workforceexperience.hp.com/blog/self-checkout-smart-pos-peripherals/,XPath,//h1[normalize-space()='Reinventing Self-Checkout With Smart POS and Peripherals']
+Simple_Dex_Management,https://workforceexperience.hp.com/blog/simple-dex-management/,XPath,//h1[normalize-space()='Making the Case for Simple DEX Management']
+Automate_Remediations_And_Workflows_To_Scale_Support,https://workforceexperience.hp.com/blog/automate-remediations-and-workflows-to-scale-support/,XPath,//h1[normalize-space()='Automate Remediations and Workflows to Scale Support']
+Podcast_Highlights_Product_Voices,https://workforceexperience.hp.com/blog/podcast-highlights-product-voices/,XPath,//h1[normalize-space()='Podcast Highlights With HP’s Faisal Masud']
+Dex_Backed_Onboarding,https://workforceexperience.hp.com/blog/dex-backed-onboarding/,XPath,"//h1[contains(normalize-space(),'DEX-Backed Onboarding: How Employees Can')]"
+Ai_Enterprise_Operating_Models,https://workforceexperience.hp.com/blog/ai-enterprise-operating-models/,XPath,//body
+Use_Remote_Connect_To_Resolve_Device_Issues_Faster,https://workforceexperience.hp.com/blog/use-remote-connect-to-resolve-device-issues-faster/,XPath,//body
+Talent_Acquisition_Retention,https://workforceexperience.hp.com/blog/talent-acquisition-retention/,XPath,//body
+Hp_A_Leader_2026_Gartner_Magic_Quadrant,https://workforceexperience.hp.com/blog/hp-a-leader-2026-gartner-magic-quadrant/,XPath,//body
+Collaboration_One_Percent_Problem,https://workforceexperience.hp.com/blog/collaboration-one-percent-problem/,XPath,//body
+Hp_On_Hp_Wxp_Collaboration_Helps_Improve_The_Meeting_Experie,https://workforceexperience.hp.com/blog/hp-on-hp-wxp-collaboration-helps-improve-the-meeting-experience/,XPath,//body
+Product_Release_Notes_Spring_26_Roundup,https://workforceexperience.hp.com/blog/product-release-notes-spring-26-roundup/,XPath,//body
+Gartner_Summit_London_Speaking_Session,https://workforceexperience.hp.com/blog/gartner-summit-london-speaking-session/,XPath,//body
+Gartner_Digital_Workplace_Summit_2026_London,https://workforceexperience.hp.com/blog/gartner-digital-workplace-summit-2026-london/,XPath,//body
+Reimagining_The_Relationship_Between_People_And_Technology_W,https://workforceexperience.hp.com/blog/reimagining-the-relationship-between-people-and-technology-wxp-hp-premium-support-services/,XPath,//body
+Memory_Crunch_Insights_Gartner,https://workforceexperience.hp.com/blog/memory-crunch-insights-gartner/,XPath,//body
+Hp_Protect_And_Trace_Api_Now_Available_On_The_Wxp_Developer_,https://workforceexperience.hp.com/blog/hp-protect-and-trace-api-now-available-on-the-wxp-developer-portal/,XPath,//body
+Hp_Solutions_Success_Model,https://workforceexperience.hp.com/blog/hp-solutions-success-model/,XPath,//body
+Navigate_The_Global_Memory_Shortage_With_Smarter_Planning_An,https://workforceexperience.hp.com/blog/navigate-the-global-memory-shortage-with-smarter-planning-and-refresh-strategies/,XPath,//body
+Gartner_Digital_Workplace_Summit_2026,https://workforceexperience.hp.com/blog/gartner-digital-workplace-summit-2026/,XPath,//body
+Chronic_It_Problems,https://workforceexperience.hp.com/blog/chronic-it-problems/,XPath,//body
+It_Experience_Debt,https://workforceexperience.hp.com/blog/it-experience-debt/,XPath,//body
+Wxp_Roi,https://workforceexperience.hp.com/blog/wxp-roi/,XPath,//body
+Dex_Wrap_2025,https://workforceexperience.hp.com/blog/dex-wrap-2025/,XPath,//body
+Wxp_Collaboration_2,https://workforceexperience.hp.com/blog/wxp-collaboration/,XPath,//body
+Gartner_It_Symposium_Xpo_2025,https://workforceexperience.hp.com/blog/gartner-it-symposium-xpo-2025/,XPath,//body
+It_Buyers_Playbook,https://workforceexperience.hp.com/blog/it-buyers-playbook/,XPath,//body
+Worker_Happiness_Dex_2025,https://workforceexperience.hp.com/blog/worker-happiness-dex-2025/,XPath,//body
+Introducing_Fleet_Explorer,https://workforceexperience.hp.com/blog/introducing-fleet-explorer/,XPath,//body
+What_Is_Digital_Collaboration,https://workforceexperience.hp.com/blog/what-is-digital-collaboration/,XPath,//body
+Ai_Mediocrity,https://workforceexperience.hp.com/blog/ai-mediocrity/,XPath,//body
+Product_Release_Notes_Autumn_25_Roundup,https://workforceexperience.hp.com/blog/product-release-notes-autumn-25-roundup/,XPath,//body
+Blog_3,https://workforceexperience.hp.com/blog/ai-it/,XPath,//body
+Hp_Idc_Daas_2025,https://workforceexperience.hp.com/blog/hp-idc-daas-2025/,XPath,//body
+Cio_Webinar_Recap,https://workforceexperience.hp.com/blog/cio-webinar-recap/,XPath,//body
+Smart_Security_Starts_Here_Wxp_With_Hp_Protect_And_Trace,https://workforceexperience.hp.com/blog/smart-security-starts-here-wxp-with-hp-protect-and-trace/,XPath,//body
+Smart_Meetings_Digital_Fatigue,https://workforceexperience.hp.com/blog/smart-meetings-digital-fatigue/,XPath,//body
+Rethinking_Space,https://workforceexperience.hp.com/blog/rethinking-space/,XPath,//body
+Invisible_It,https://workforceexperience.hp.com/blog/invisible-it/,XPath,//body
+Hp_Anyware_Windows_365,https://workforceexperience.hp.com/blog/hp-anyware-windows-365/,XPath,//body
+Wxp_Ux_Design_Awards_2025,https://workforceexperience.hp.com/blog/wxp-ux-design-awards-2025/,XPath,//body
+Wxp_Adds_Over_1million_Devices,https://workforceexperience.hp.com/blog/wxp-adds-over-1million-devices/,XPath,//body
+Wxp_To_Accelerate_Windows_11_Migration,https://workforceexperience.hp.com/blog/wxp-to-accelerate-windows-11-migration/,XPath,//body
+Dex_Trends,https://workforceexperience.hp.com/blog/dex-trends/,XPath,//body
+Hp_Wins_Bronze_Stevie_Award,https://workforceexperience.hp.com/blog/hp-wins-bronze-stevie-award/,XPath,//body
+Product_Release_Notes_Summer_25_Roundup,https://workforceexperience.hp.com/blog/product-release-notes-summer-25-roundup/,XPath,//body
+How_Wxp_Helps_Hp_Partners_Deliver_More_Value,https://workforceexperience.hp.com/blog/how-wxp-helps-hp-partners-deliver-more-value/,XPath,//body
+Data_Where_You_Need_It_Integrate_Wxp_Into_Your_Tech_Stack,https://workforceexperience.hp.com/blog/data-where-you-need-it-integrate-wxp-into-your-tech-stack/,XPath,//body
+Digital_Workspaces,https://workforceexperience.hp.com/blog/digital-workspaces/,XPath,//body
+Wxp_Integrates_With_Microsoft_Security_Copilot,https://workforceexperience.hp.com/blog/wxp-integrates-with-microsoft-security-copilot/,XPath,//body
+Professional_Services,https://workforceexperience.hp.com/blog/professional-services/,XPath,//body
+Infocomm_2025,https://workforceexperience.hp.com/blog/infocomm-2025/,XPath,//body
+Gartner_Summit_2025_London,https://workforceexperience.hp.com/blog/gartner-summit-2025-london/,XPath,//body
+Build_Custom_Integrations_To_Maximize_Data_Value,https://workforceexperience.hp.com/blog/build-custom-integrations-to-maximize-data-value/,XPath,//body
+It_Ticket_Addiction,https://workforceexperience.hp.com/blog/it-ticket-addiction/,XPath,//body
+Digital_Collaboration_Experience,https://workforceexperience.hp.com/blog/digital-collaboration-experience/,XPath,//body
+Release_Notes_Spring_25,https://workforceexperience.hp.com/blog/release-notes-spring-25/,XPath,//body
+End_To_End_Employee_Experience,https://workforceexperience.hp.com/blog/end-to-end-employee-experience/,XPath,//body
+Fleet_Explorer,https://workforceexperience.hp.com/blog/fleet-explorer/,XPath,//body
+Microsoft_Teams_Zoom_Outage,https://workforceexperience.hp.com/blog/microsoft-teams-zoom-outage/,XPath,//body
+Outlier_Detection,https://workforceexperience.hp.com/blog/outlier-detection/,XPath,//body
+It_Asset_Lifecycle,https://workforceexperience.hp.com/blog/it-asset-lifecycle/,XPath,//body
+Takeaways_Gartner_Summit_2025,https://workforceexperience.hp.com/blog/takeaways-gartner-summit-2025/,XPath,//body
+Print_Workflow_Automation,https://workforceexperience.hp.com/blog/print-workflow-automation/,XPath,//body
+Gartner_Digital_Workplace_Summit_2025,https://workforceexperience.hp.com/blog/gartner-digital-workplace-summit-2025/,XPath,//body
+Future_Of_Digital_Workspaces,https://workforceexperience.hp.com/blog/future-of-digital-workspaces/,XPath,//body
+Release_Notes_25_02,https://workforceexperience.hp.com/blog/release-notes-25-02/,XPath,//body
+Employee_Pulses,https://workforceexperience.hp.com/blog/employee-pulses/,XPath,//body
+Windows_11_Migration,https://workforceexperience.hp.com/blog/windows-11-migration/,XPath,//body
+Servicenow_Event_Management,https://workforceexperience.hp.com/blog/servicenow-event-management/,XPath,//body
+Hp_Idc_Marketscape,https://workforceexperience.hp.com/blog/hp-idc-marketscape/,XPath,//body
+Hp_Anyware_Nutanix_Ready,https://workforceexperience.hp.com/blog/hp-anyware-nutanix-ready/,XPath,//body
+Release_Notes_24_11,https://workforceexperience.hp.com/blog/release-notes-24-11/,XPath,//body
+Ai_Fomo,https://workforceexperience.hp.com/blog/ai-fomo/,XPath,//body
+Employee_Engagement_2,https://workforceexperience.hp.com/blog/employee-engagement/,XPath,//body
+Print_Workforce_Experience,https://workforceexperience.hp.com/blog/print-workforce-experience/,XPath,//body
+Hp_Anyware_End_User_Computing,https://workforceexperience.hp.com/blog/hp-anyware-end-user-computing/,XPath,//body
+Scuderia_Ferrari_Telemetry,https://workforceexperience.hp.com/blog/scuderia-ferrari-telemetry/,XPath,//body
+Product_Leadership,https://workforceexperience.hp.com/blog/product-leadership/,XPath,//body
+Hp_Gartner_Magic_Quadrant_Dex,https://workforceexperience.hp.com/blog/hp-gartner-magic-quadrant-dex/,XPath,//body
+Hp_Anyware_Manager_Enterprise,https://workforceexperience.hp.com/blog/hp-anyware-manager-enterprise/,XPath,//body
+Architecting_Digital_Employee_Experience,https://workforceexperience.hp.com/blog/architecting-digital-employee-experience/,XPath,//body
+Hp_Data_Scale,https://workforceexperience.hp.com/blog/hp-data-scale/,XPath,//body
+Hp_Aws,https://workforceexperience.hp.com/blog/hp-aws/,XPath,//body
+Productivity_Paradox_Of_Hybrid_Workforce,https://workforceexperience.hp.com/blog/productivity-paradox-of-hybrid-workforce/,XPath,//body
+Hp_Datacom_Fleet_Management,https://workforceexperience.hp.com/blog/hp-datacom-fleet-management/,XPath,//body
+Successful_Dex_Fundamentals,https://workforceexperience.hp.com/blog/successful-dex-fundamentals/,XPath,//body
+Software_2,https://workforceexperience.hp.com/software.,XPath,//body
+Requirements_2,https://workforceexperience.hp.com/requirements.,XPath,//body
+Index,https://workforceexperience.hp.com/strategy/release-notes-24-11/index.html,XPath,//body
+Digital_Workspaces_2,https://workforceexperience.hp.com/digital-workspaces/,XPath,//body
+Wxp_Ea,https://workforceexperience.hp.com/wxp-ea/,XPath,//body
+Scuderia_Ferrari_Telemetry_2,https://workforceexperience.hp.com/2024/09/24/scuderia-ferrari-telemetry/,XPath,//body
+Optimizations,https://workforceexperience.hp.com/learning/device-management/optimizations/,XPath,//body
+Device_Monitoring,https://workforceexperience.hp.com/learning/device-management/device-monitoring/,XPath,//body
+Patch_Management,https://workforceexperience.hp.com/learning/device-management/patch-management/,XPath,//body
+Hp_Data_Scale_2,https://workforceexperience.hp.com/2024/07/08/hp-data-scale/,XPath,//body
+Employee_Productivity,https://workforceexperience.hp.com/learning/employee-experience/employee-productivity/,XPath,//body
+Software_License_Management,https://workforceexperience.hp.com/learning/device-management/software-license-management/,XPath,//body
+Application_Management,https://workforceexperience.hp.com/learning/device-management/application-management/,XPath,//body
+Open_Source_Itam_Software,https://workforceexperience.hp.com/learning/device-management/open-source-itam-software/,XPath,//body
+Device_Management,https://workforceexperience.hp.com/learning/device-management/,XPath,//body
+Remote_Workforce_Technology,https://workforceexperience.hp.com/learning/digital-workplace/remote-workforce-technology/,XPath,//body
+Transformation,https://workforceexperience.hp.com/learning/digital-workplace/transformation/,XPath,//body
+Modern_Workplace,https://workforceexperience.hp.com/learning/digital-workplace/modern-workplace/,XPath,//body
+Digital_Workplace,https://workforceexperience.hp.com/learning/digital-workplace/,XPath,//body
+Euem_Tools,https://workforceexperience.hp.com/learning/employee-experience/euem-tools/,XPath,//body
+Ucaas_Solutions,https://workforceexperience.hp.com/learning/employee-experience/ucaas-solutions/,XPath,//body
+Employee_Experience,https://workforceexperience.hp.com/learning/employee-experience/,XPath,//body
+Secure_Remote_Access_Solutions,https://workforceexperience.hp.com/learning/endpoint-security/secure-remote-access-solutions/,XPath,//body
+Hardening,https://workforceexperience.hp.com/learning/endpoint-security/hardening/,XPath,//body
+Enterprise_It_Security,https://workforceexperience.hp.com/learning/endpoint-security/enterprise-it-security/,XPath,//body
+Endpoint_Security,https://workforceexperience.hp.com/learning/endpoint-security/,XPath,//body
+Metrics_And_Monitoring,https://workforceexperience.hp.com/learning/it-operations/metrics-and-monitoring/,XPath,//body
+Root_Cause_Analysis,https://workforceexperience.hp.com/learning/it-operations/root-cause-analysis/,XPath,//body
+It_Modernization,https://workforceexperience.hp.com/learning/it-operations/it-modernization/,XPath,//body
+It_Operations,https://workforceexperience.hp.com/learning/it-operations/,XPath,//body
+Omnichannel_Integration,https://workforceexperience.hp.com/learning/retail/omnichannel-integration/,XPath,//body
+Stock_Accuracy,https://workforceexperience.hp.com/learning/retail/stock-accuracy/,XPath,//body
+Ai_Retail_Operations,https://workforceexperience.hp.com/learning/retail/ai-retail-operations/,XPath,//body
+Retail_2,https://workforceexperience.hp.com/learning/retail/,XPath,//body
+Blog_4,https://workforceexperience.hp.com/blog/?search=Collaboration,XPath,//body
+Printer_Fleet,https://workforceexperience.hp.com/learning/device-management/printer-fleet/,XPath,//body
+Leadership,https://workforceexperience.hp.com/leadership/,XPath,//body

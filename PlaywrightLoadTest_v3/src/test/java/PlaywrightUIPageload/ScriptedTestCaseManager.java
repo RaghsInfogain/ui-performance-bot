@@ -20,9 +20,9 @@ public class ScriptedTestCaseManager {
                     continue; // Skip empty lines
                 }
                 if (headers == null) {
-                    headers = line.split(",");
+                    headers = TestDataManager.splitCsvLine(line);
                 } else {
-                    String[] parts = line.split(",");
+                    String[] parts = TestDataManager.splitCsvLine(line);
                     Map<String, String> testCase = new HashMap<>();
                     for (int i = 0; i < headers.length; i++) {
                         String value = parts.length > i ? parts[i].trim() : ""; // Handle empty cells gracefully

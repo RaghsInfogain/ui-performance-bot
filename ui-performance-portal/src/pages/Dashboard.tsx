@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Play, Globe, Settings, Clapperboard, ArrowRight, RefreshCw, MoreHorizontal,
+  Play, Settings, ScrollText, ArrowRight, RefreshCw, MoreHorizontal, Globe, History,
 } from 'lucide-react';
 import { PageHeader } from '../components/layout/AppLayout';
 import { DataTable } from '../components/common/DataTable';
@@ -142,12 +142,13 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {[
-          { to: '/app/crawler', icon: Globe, title: 'Start a crawl', sub: 'Discover URLs' },
-          { to: '/app/configuration', icon: Settings, title: 'Update settings', sub: 'Configuration' },
-          { to: '/app/script-studio', icon: Clapperboard, title: 'Manage scripts', sub: 'Script Studio' },
+          { to: '/app/crawler', icon: Globe, title: 'Crawl a site', sub: 'Discover URLs' },
+          { to: '/app/scripts', icon: ScrollText, title: 'Manage scripts', sub: 'Create, edit & sync' },
           { to: '/app/run-test', icon: Play, title: 'Launch a run', sub: 'Static or scripted' },
+          { to: '/app/runs', icon: History, title: 'Run history', sub: 'Live and past executions' },
+          { to: '/app/configuration', icon: Settings, title: 'Update settings', sub: 'Configuration' },
         ].map(({ to, icon: Icon, title, sub }) => (
           <Link
             key={to}

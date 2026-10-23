@@ -1,0 +1,9 @@
+Transaction Name,Path Page URL,Element Identifier,Element Selector
+Start_Page,https://opensource-demo.orangehrmlive.com/,NA,body
+Navigate to https://opensource-demo.orangehrmlive.com/web/index.php/auth/login,https://opensource-demo.orangehrmlive.com/web/index.php/auth/login,NA,body
+Navigate to https://opensource-demo.orangehrmlive.com/web/index.php/dashboard/in,https://opensource-demo.orangehrmlive.com/web/index.php/dashboard/index,NA,body
+Navigate to https://opensource-demo.orangehrmlive.com/web/index.php/admin/viewSy,https://opensource-demo.orangehrmlive.com/web/index.php/admin/viewSystemUsers,NA,body
+Navigate to https://opensource-demo.orangehrmlive.com/web/index.php/pim/viewEmpl,https://opensource-demo.orangehrmlive.com/web/index.php/pim/viewEmployeeList,NA,body
+Navigate to https://opensource-demo.orangehrmlive.com/web/index.php/leave/viewLe,https://opensource-demo.orangehrmlive.com/web/index.php/leave/viewLeaveList,NA,body
+Navigate to https://opensource-demo.orangehrmlive.com/web/index.php/time/viewEmp,https://opensource-demo.orangehrmlive.com/web/index.php/time/viewEmployeeTimesheet,NA,body
+Navigate to https://opensource-demo.orangehrmlive.com/web/index.php/recruitment/,https://opensource-demo.orangehrmlive.com/web/index.php/recruitment/viewCandidates,NA,body

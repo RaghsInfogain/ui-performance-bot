@@ -125,8 +125,34 @@ export const SCRIPTED_ACTIONS = [
   'ClickSwitchToNewTabAndGetText', 'SwitchToNewTabAndGetText', 'WaitUntilElementIsVisible',
 ] as const;
 
+export interface ExecutionSettings {
+  browserType: BrowserType;
+  headlessMode: boolean;
+  testDurationSeconds: number;
+  multiThreading: number;
+  thinkTime: number;
+}
+
+export interface BatchRunScript {
+  runId: string;
+  mode: RunMode;
+  scriptId: string;
+  scriptName: string;
+  loadPercent: number;
+  multiThreading: number;
+  status: RunStatus;
+}
+
+export interface BatchRunResult {
+  batchId: string;
+  totalThreads: number;
+  runs: BatchRunScript[];
+}
+
 export interface TestScript {
   id: string;
+  /** Unique numeric Script ID shown in the Scripts page */
+  scriptNumber?: number | null;
   name: string;
   type: 'static' | 'scripted';
   source?: 'studio' | 'legacy' | 'crawled';
@@ -136,10 +162,13 @@ export interface TestScript {
   stepCount: number;
   createdAt: string;
   updatedAt: string;
+  /** Rows of attached CSV test data (scripted scripts); 0 when none. */
+  testDataRows?: number;
 }
 
 export interface RunReportMeta {
   analyzer?: string;
+  mode?: string;
   lighthouseJsonCount?: number;
   navigationRowCount?: number;
   csvRowCount?: number;
@@ -264,4 +293,94 @@ export interface GoLiveAnalysis {
   };
   generatedBy: string;
   llmEnhanced?: boolean;
+}
+
+export interface RunSchedule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  frequency: 'hourly' | 'daily' | 'weekly';
+  cronMinute: number;
+  cronHour: number;
+  cronWeekday?: number | null;
+  mode: RunMode;
+  scriptId?: string | null;
+  crawlRunId?: string | null;
+  testSuite?: string | null;
+  configSnapshot?: Partial<AppConfig>;
+  lastRunAt?: string | null;
+  lastRunId?: string | null;
+  nextRunAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface RunComparison {
+  baselineRunId: string;
+  currentRunId: string;
+  overall: 'improved' | 'degraded' | 'unchanged';
+  executiveSummary: string;
+  generatedAt: string;
+  baselineSummary: Record<string, number | null>;
+  currentSummary: Record<string, number | null>;
+  kpi: Array<{
+    label: string;
+    key: string;
+    baseline: number | null;
+    current: number | null;
+    delta: number | null;
+    pctDelta: number | null;
+    unit: string;
+    status: 'improved' | 'degraded' | 'unchanged';
+  }>;
+  pages: Array<{
+    pageUrl: string;
+    transaction: string;
+    baseline: Record<string, number | string> | null;
+    current: Record<string, number | string> | null;
+    deltas: Record<string, number | null> | null;
+    status: string;
+  }>;
+  charts: {
+    scores: Array<{ name: string; baseline: number; current: number }>;
+    lcp: Array<{ name: string; baseline: number; current: number }>;
+  };
+}
+
+/** Static / navigation test case CSV columns (header → row field). */
+export const STATIC_COLUMNS = [
+  { key: 'transactionName', header: 'Transaction Name' },
+  { key: 'pageUrl', header: 'Path Page URL' },
+  { key: 'elementIdentifier', header: 'Element Identifier' },
+  { key: 'elementSelector', header: 'Element Selector' },
+] as const;
+
+/** Scripted flow CSV columns (header → row field), in file order. */
+export const SCRIPTED_COLUMNS = [
+  { key: 'testCaseName', header: 'Test_Case_Name' },
+  { key: 'transactionName', header: 'Transaction_Name' },
+  { key: 'testStep', header: 'Test_Steps' },
+  { key: 'objectName', header: 'Object_Name' },
+  { key: 'request', header: 'Request' },
+  { key: 'selector', header: 'Selector' },
+  { key: 'locator', header: 'Locator' },
+  { key: 'action', header: 'Action' },
+  { key: 'parameter', header: 'Parameter' },
+  { key: 'elementToWait', header: 'Element to Wait' },
+  { key: 'elementIdentifier', header: 'Element identifier' },
+  { key: 'frameSelector', header: 'Frame_Selector' },
+] as const;
+
+/** How each flow iteration picks its test data row. */
+export type TestDataMode = 'sequential' | 'random' | 'unique';
+
+/** CSV test data attached to a scripted script; steps use ${column} placeholders. */
+export interface ScriptTestData {
+  scriptId: string;
+  fileName: string;
+  headers: string[];
+  rows: string[][];
+  rowCount: number;
+  mode: TestDataMode;
+  updatedAt: string;
 }

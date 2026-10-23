@@ -5,5 +5,5 @@ Orange_HRM,,Click On Username,Username,,//input[@placeholder='Username'],Xpath,C
 Orange_HRM,,Enter Username,Username,,//input[@placeholder='Username'],Xpath,Set_Text,Admin,Xpath,//h5[normalize-space()='Login'],
 Orange_HRM,,Click On Password,Password,,//input[@placeholder='Password'],Xpath,Click,,Xpath,//h5[normalize-space()='Login'],
 Orange_HRM,,Enter Password,Password,,//input[@placeholder='Password'],Xpath,Set_Text,admin123,Xpath,//h5[normalize-space()='Login'],
-Orange_HRM,,Click on Login Button,Login Button,Post:/web/index.php/dashboard/index,//button[normalize-space()='Login'],Xpath,Click,,Xpath,//h5[normalize-space()='Login'],
-Orange_HRM,TC02_OHRM_Dashboard,Wait for Dashboard Page to Load,Dashboard,Get:/web/index.php/dashboard/index,//h6[normalize-space()='Dashboard'],Xpath,CalculateFullPageLoadTime,,Xpath,//h6[normalize-space()='Dashboard'],
+Orange_HRM,TC02_OHRM_Login,Click on Login Button,Login Button,Post:/web/index.php/dashboard/index,//button[normalize-space()='Login'],Xpath,Click,,Xpath,//h5[normalize-space()='Login'],
+Orange_HRM,TC03_OHRM_Dashboard,Wait for Dashboard Page to Load,Dashboard,Get:/web/index.php/dashboard/index,//h6[normalize-space()='Dashboard'],Xpath,CalculateFullPageLoadTime,,Xpath,//h6[normalize-space()='Dashboard'],

@@ -20,13 +20,13 @@ public class TestDataManager {
                 }
 
                 if (headers == null) {
-                    headers = line.split(",");
+                    headers = splitCsvLine(line);
                     // Trim headers to remove any leading/trailing spaces
                     for (int i = 0; i < headers.length; i++) {
                         headers[i] = headers[i].trim();
                     }
                 } else {
-                    String[] parts = line.split(",");
+                    String[] parts = splitCsvLine(line);
                     Map<String, String> rowData = new HashMap<>();
 
                     // Ensure that the number of parts matches the number of headers
@@ -49,5 +49,39 @@ public class TestDataManager {
 
         return testCasesData;
     }
-}
 
+    /**
+     * Split one CSV line, honouring double-quoted fields ("a,b" and "" escapes) so selectors
+     * containing commas or quotes survive. Unquoted lines split exactly as on ",".
+     */
+    public static String[] splitCsvLine(String line) {
+        List<String> fields = new ArrayList<>();
+        StringBuilder cur = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (inQuotes) {
+                if (c == '"') {
+                    if (i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                        cur.append('"');
+                        i++;
+                    } else {
+                        inQuotes = false;
+                    }
+                } else {
+                    cur.append(c);
+                }
+            } else if (c == '"' && cur.toString().trim().isEmpty()) {
+                cur.setLength(0);
+                inQuotes = true;
+            } else if (c == ',') {
+                fields.add(cur.toString());
+                cur.setLength(0);
+            } else {
+                cur.append(c);
+            }
+        }
+        fields.add(cur.toString());
+        return fields.toArray(new String[0]);
+    }
+}

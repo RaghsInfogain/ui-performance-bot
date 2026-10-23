@@ -14,7 +14,13 @@ public class RunIdManager {
     // Method to get the Run ID, generating it only once per test run
     public static String getRunId() {
         if (currentRunId == null) {
-            currentRunId = loadAndIncrementRunId();
+            String fromEnv = System.getenv("UIPB_RUN_ID");
+            if (fromEnv != null && !fromEnv.trim().isEmpty()) {
+                currentRunId = fromEnv.trim();
+                saveRunId(currentRunId);
+            } else {
+                currentRunId = loadAndIncrementRunId();
+            }
         }
         return currentRunId;
     }
