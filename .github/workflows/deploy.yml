@@ -26,13 +26,13 @@ jobs:
     runs-on: [self-hosted, ui-perf-local]
     environment:
       name: production
-      url: http://localhost:8080
+      url: http://localhost:8090
     timeout-minutes: 60
     env:
       # launchd starts the runner with a minimal PATH; Docker Desktop's CLI lives here
       PATH: /usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
       IMAGE_TAG: sha-${{ github.sha }}
-      APP_PORT: "8080"
+      APP_PORT: "8090"
     steps:
       - uses: actions/checkout@v4
 
